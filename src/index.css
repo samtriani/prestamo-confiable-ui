@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-navy-900 text-slate-100 font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Scrollbar personalizado */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-navy-900; }
+  ::-webkit-scrollbar-thumb { @apply bg-navy-600 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-navy-500; }
+}
+
+@layer components {
+  /* Tabla base */
+  .ec-table {
+    @apply w-full text-sm;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .ec-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest
+           text-slate-500 bg-navy-800 border-b border-white/5;
+  }
+
+  .ec-table td {
+    @apply px-4 py-3 border-b border-white/5 text-slate-300;
+  }
+
+  .ec-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .ec-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+
+  .ec-table tbody tr:hover td {
+    @apply bg-navy-800/60;
+  }
+
+  /* Input base */
+  .ec-input {
+    @apply w-full bg-navy-800 border border-white/10 rounded-lg px-3 py-2.5
+           text-sm text-slate-100 placeholder-slate-500
+           focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600/30
+           transition-all duration-150;
+  }
+
+  /* Card base */
+  .ec-card {
+    @apply bg-navy-800 border border-white/5 rounded-xl;
+  }
+
+  /* Stagger animation delays */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.10s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.20s; }
+  .stagger-5 { animation-delay: 0.25s; }
+}
