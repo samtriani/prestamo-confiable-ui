@@ -1,5 +1,5 @@
 import client from './client'
-import type { Cliente, ClienteRequest, PrestamoResumen, Prestamo, Pago, EstadoPago, Abono, AbonoRequest, Corte, CorteRequest, DashboardData } from '@/types'
+import type { Cliente, ClienteRequest, PrestamoResumen, Pago, EstadoPago, Abono, AbonoRequest, Corte, CorteRequest, DashboardData } from '@/types'
 
 export const clientesApi = {
   getAll: () =>
