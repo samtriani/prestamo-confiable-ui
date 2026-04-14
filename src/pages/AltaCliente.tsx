@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { ArrowLeft, Calculator, User, MapPin, Phone, DollarSign, Calendar } from 'lucide-react'
+import { ArrowLeft, Calculator, User, DollarSign, Calendar } from 'lucide-react'
 import { useAltaCliente } from '@/hooks'
 import { Button, Input } from '@/components/ui'
 import { fmt } from '@/utils/format'

@@ -107,10 +107,11 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token:    string
-  username: string
-  nombre:   string
-  rol:      Rol
+  token:     string
+  username:  string
+  nombre:    string
+  rol:       Rol
+  clienteId?: string
 }
 
 export interface AuthUser {

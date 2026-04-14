@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Scissors, AlertTriangle, TrendingUp } from 'lucide-react'
+import { Scissors, TrendingUp } from 'lucide-react'
 import {
   useDashboard, usePrestamosActivos, useRealizarCorte,
   useTotalSemanal
 } from '@/hooks'
-import { StatCard, PagoGrid, Badge, Button, Modal } from '@/components/ui'
+import { StatCard, Button, Modal } from '@/components/ui'
 import { fmt } from '@/utils/format'
 import { useAuth } from '@/context/AuthContext'
 import type { PrestamoResumen } from '@/types'

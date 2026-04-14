@@ -15,7 +15,7 @@ export default function DetalleCliente() {
   const navigate   = useNavigate()
 
   const { data: cliente }                       = useCliente(id!)
-  const { data: historial = [], isLoading }     = useHistorialCliente(id!)
+  const { data: historial = [] }                = useHistorialCliente(id!)
 
   // Préstamo activo (primero de la lista si activo = true)
   const prestamoActivo = historial.find((p: PrestamoResumen) => p.activo)
