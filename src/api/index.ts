@@ -9,7 +9,7 @@ export const clientesApi = {
     client.get<Cliente>(`/clientes/${id}`).then(r => r.data),
 
   getHistorial: (clienteId: string) =>
-    client.get<Prestamo[]>(`/clientes/${clienteId}/historial`).then(r => r.data),
+    client.get<PrestamoResumen[]>(`/clientes/${clienteId}/historial`).then(r => r.data),
 
   getPrestamosActivos: () =>
     client.get<PrestamoResumen[]>('/clientes/prestamos/activos').then(r => r.data),
