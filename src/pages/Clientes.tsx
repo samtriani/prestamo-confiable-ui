@@ -22,10 +22,10 @@ export default function Clientes() {
 
       {/* Toolbar */}
       <div className="flex gap-3 items-center">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
-            className="ec-input pl-9"
+            className="ec-input pl-9 w-full"
             placeholder="Buscar por nombre, número o teléfono…"
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -33,74 +33,100 @@ export default function Clientes() {
         </div>
         <Button variant="primary" size="md" onClick={() => navigate('/alta')}>
           <UserPlus size={14} />
-          Nuevo cliente
+          <span className="hidden sm:inline">Nuevo cliente</span>
         </Button>
       </div>
 
       {/* Resultados */}
-      <div className="ec-card overflow-hidden">
-        {isLoading ? (
-          <div className="p-10 text-center text-slate-500 text-sm">Cargando clientes…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center">
-            <p className="text-slate-400 text-sm font-medium">Sin resultados</p>
-            <p className="text-slate-600 text-xs mt-1">
-              {query ? `No se encontró "${query}"` : 'No hay clientes registrados aún'}
-            </p>
+      {isLoading ? (
+        <div className="ec-card p-10 text-center text-slate-500 text-sm">Cargando clientes…</div>
+      ) : filtered.length === 0 ? (
+        <div className="ec-card p-10 text-center">
+          <p className="text-slate-400 text-sm font-medium">Sin resultados</p>
+          <p className="text-slate-600 text-xs mt-1">
+            {query ? `No se encontró "${query}"` : 'No hay clientes registrados aún'}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* ── MOBILE: cards ─────────────────────────────────── */}
+          <div className="md:hidden space-y-2">
+            {filtered.map((c: Cliente, i) => (
+              <div
+                key={c.id}
+                className="ec-card p-4 flex items-center gap-3 cursor-pointer active:bg-navy-700 transition-colors animate-fade-in"
+                style={{ animationDelay: `${i * 25}ms` }}
+                onClick={() => navigate(`/clientes/${c.id}`)}
+              >
+                <div className="w-9 h-9 rounded-full bg-navy-700 border border-white/10 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-semibold text-slate-300">{fmt.initials(c.nombre)}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-slate-100 text-sm truncate">{c.nombre}</p>
+                  <p className="text-xs text-slate-500 font-mono">
+                    {c.numero}{c.telefono ? ` · ${c.telefono}` : ''}
+                  </p>
+                </div>
+                <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              </div>
+            ))}
           </div>
-        ) : (
-          <table className="ec-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Cliente</th>
-                <th>Teléfono</th>
-                <th>Domicilio</th>
-                <th>Registrado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c: Cliente, i) => (
-                <tr
-                  key={c.id}
-                  className="cursor-pointer animate-fade-in"
-                  style={{ animationDelay: `${i * 25}ms` }}
-                  onClick={() => navigate(`/clientes/${c.id}`)}
-                >
-                  <td>
-                    <span className="font-mono text-xs text-green-400 font-medium">{c.numero}</span>
-                  </td>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-navy-700 border border-white/10 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-semibold text-slate-300">
-                          {fmt.initials(c.nombre)}
-                        </span>
-                      </div>
-                      <span className="font-medium text-slate-100">{c.nombre}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="font-mono text-xs text-slate-400">{c.telefono ?? '—'}</span>
-                  </td>
-                  <td>
-                    <span className="text-xs text-slate-500 truncate max-w-[200px] block">
-                      {c.domicilio ?? '—'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="text-xs text-slate-500">{fmt.date(c.createdAt)}</span>
-                  </td>
-                  <td>
-                    <ChevronRight size={14} className="text-slate-600" />
-                  </td>
+
+          {/* ── DESKTOP: tabla ────────────────────────────────── */}
+          <div className="hidden md:block ec-card overflow-hidden">
+            <table className="ec-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Cliente</th>
+                  <th>Teléfono</th>
+                  <th>Domicilio</th>
+                  <th>Registrado</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {filtered.map((c: Cliente, i) => (
+                  <tr
+                    key={c.id}
+                    className="cursor-pointer animate-fade-in"
+                    style={{ animationDelay: `${i * 25}ms` }}
+                    onClick={() => navigate(`/clientes/${c.id}`)}
+                  >
+                    <td>
+                      <span className="font-mono text-xs text-green-400 font-medium">{c.numero}</span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-navy-700 border border-white/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-semibold text-slate-300">
+                            {fmt.initials(c.nombre)}
+                          </span>
+                        </div>
+                        <span className="font-medium text-slate-100">{c.nombre}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="font-mono text-xs text-slate-400">{c.telefono ?? '—'}</span>
+                    </td>
+                    <td>
+                      <span className="text-xs text-slate-500 truncate max-w-[200px] block">
+                        {c.domicilio ?? '—'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="text-xs text-slate-500">{fmt.date(c.createdAt)}</span>
+                    </td>
+                    <td>
+                      <ChevronRight size={14} className="text-slate-600" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {/* Footer count */}
       {filtered.length > 0 && (

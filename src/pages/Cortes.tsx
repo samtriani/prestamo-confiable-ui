@@ -66,19 +66,19 @@ export default function Cortes() {
     <div className="space-y-5 animate-fade-up">
 
       {/* Resumen y acción */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="ec-card p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">Cortes realizados</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="ec-card p-4 sm:p-5">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1 sm:mb-2">Cortes realizados</p>
           <p className="text-2xl font-display font-bold">{cortes.length}</p>
         </div>
-        <div className="ec-card p-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">Total histórico cortado</p>
-          <p className="text-2xl font-display font-bold text-green-400">{fmt.money(totalHistorico)}</p>
+        <div className="ec-card p-4 sm:p-5">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1 sm:mb-2">Total histórico</p>
+          <p className="text-xl sm:text-2xl font-display font-bold text-green-400">{fmt.money(totalHistorico)}</p>
         </div>
-        <div className="ec-card p-5 flex items-center justify-between">
+        <div className="col-span-2 sm:col-span-1 ec-card p-4 sm:p-5 flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1">Pendiente de corte</p>
-            <p className="text-2xl font-display font-bold text-orange-400">
+            <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1">Pendiente de corte</p>
+            <p className="text-xl sm:text-2xl font-display font-bold text-orange-400">
               {semanal ? fmt.money(semanal.totalSemanal) : '—'}
             </p>
           </div>
@@ -99,79 +99,106 @@ export default function Cortes() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
           Historial de cortes
         </h2>
-        <div className="ec-card overflow-hidden">
-          {isLoading ? (
-            <div className="p-10 text-center text-slate-500 text-sm">Cargando…</div>
-          ) : cortes.length === 0 ? (
-            <div className="p-10 text-center">
-              <Scissors size={24} className="text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm">No hay cortes realizados aún</p>
-              <p className="text-slate-600 text-xs mt-1">El primer corte aparecerá aquí</p>
+        {isLoading ? (
+          <div className="ec-card p-10 text-center text-slate-500 text-sm">Cargando…</div>
+        ) : cortes.length === 0 ? (
+          <div className="ec-card p-10 text-center">
+            <Scissors size={24} className="text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">No hay cortes realizados aún</p>
+            <p className="text-slate-600 text-xs mt-1">El primer corte aparecerá aquí</p>
+          </div>
+        ) : (
+          <>
+            {/* ── MOBILE: cards ─────────────────────────────────── */}
+            <div className="md:hidden space-y-2">
+              {sorted.map((c: Corte, i) => (
+                <div
+                  key={c.id}
+                  className="ec-card p-4 animate-fade-in"
+                  style={{ animationDelay: `${i * 30}ms` }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-medium text-slate-200 text-sm">{fmt.date(c.fechaCorte)}</p>
+                      <p className="text-xs text-slate-500">{fmt.datetime(c.createdAt)}</p>
+                    </div>
+                    <span className="font-mono font-bold text-green-400 text-base">{fmt.money(c.totalSemanal)}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-slate-500">
+                    <span><span className="text-slate-400 font-mono">{c.numAbonos}</span> abonos</span>
+                    <span><span className="text-slate-400 font-mono">{c.numClientes ?? '—'}</span> clientes</span>
+                    {c.descripcion && <span className="italic truncate">{c.descripcion}</span>}
+                  </div>
+                </div>
+              ))}
             </div>
-          ) : (
-            <table className="ec-table">
-              <thead>
-                <tr>
-                  <th className={thClass} onClick={() => toggleSort('createdAt')}>
-                    <CalendarDays size={12} className="inline mr-1.5" />
-                    Fecha
-                    <SortIcon col="createdAt" sortKey={sortKey} dir={sortDir} />
-                  </th>
-                  <th className={thClass} onClick={() => toggleSort('totalSemanal')}>
-                    Total del corte
-                    <SortIcon col="totalSemanal" sortKey={sortKey} dir={sortDir} />
-                  </th>
-                  <th className={thClass} onClick={() => toggleSort('numAbonos')}>
-                    <CreditCard size={12} className="inline mr-1.5" />
-                    Abonos
-                    <SortIcon col="numAbonos" sortKey={sortKey} dir={sortDir} />
-                  </th>
-                  <th className={thClass} onClick={() => toggleSort('numClientes')}>
-                    <Users size={12} className="inline mr-1.5" />
-                    Clientes
-                    <SortIcon col="numClientes" sortKey={sortKey} dir={sortDir} />
-                  </th>
-                  <th className={thClass} onClick={() => toggleSort('numPrestamos')}>
-                    Préstamos
-                    <SortIcon col="numPrestamos" sortKey={sortKey} dir={sortDir} />
-                  </th>
-                  <th>Descripción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((c: Corte, i) => (
-                  <tr key={c.id} className="animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
-                    <td>
-                      <div>
-                        <p className="font-medium text-slate-200">{fmt.date(c.fechaCorte)}</p>
-                        <p className="text-xs text-slate-500">{fmt.datetime(c.createdAt)}</p>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="font-mono font-medium text-green-400 text-base">
-                        {fmt.money(c.totalSemanal)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="font-mono text-slate-300">{c.numAbonos}</span>
-                    </td>
-                    <td>
-                      <span className="font-mono text-slate-400">{c.numClientes ?? '—'}</span>
-                    </td>
-                    <td>
-                      <span className="font-mono text-slate-400">{c.numPrestamos ?? '—'}</span>
-                    </td>
-                    <td>
-                      <span className="text-xs text-slate-500 italic">
-                        {c.descripcion ?? '—'}
-                      </span>
-                    </td>
+
+            {/* ── DESKTOP: tabla ────────────────────────────────── */}
+            <div className="hidden md:block ec-card overflow-hidden">
+              <table className="ec-table">
+                <thead>
+                  <tr>
+                    <th className={thClass} onClick={() => toggleSort('createdAt')}>
+                      <CalendarDays size={12} className="inline mr-1.5" />
+                      Fecha
+                      <SortIcon col="createdAt" sortKey={sortKey} dir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => toggleSort('totalSemanal')}>
+                      Total del corte
+                      <SortIcon col="totalSemanal" sortKey={sortKey} dir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => toggleSort('numAbonos')}>
+                      <CreditCard size={12} className="inline mr-1.5" />
+                      Abonos
+                      <SortIcon col="numAbonos" sortKey={sortKey} dir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => toggleSort('numClientes')}>
+                      <Users size={12} className="inline mr-1.5" />
+                      Clientes
+                      <SortIcon col="numClientes" sortKey={sortKey} dir={sortDir} />
+                    </th>
+                    <th className={thClass} onClick={() => toggleSort('numPrestamos')}>
+                      Préstamos
+                      <SortIcon col="numPrestamos" sortKey={sortKey} dir={sortDir} />
+                    </th>
+                    <th>Descripción</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {sorted.map((c: Corte, i) => (
+                    <tr key={c.id} className="animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
+                      <td>
+                        <div>
+                          <p className="font-medium text-slate-200">{fmt.date(c.fechaCorte)}</p>
+                          <p className="text-xs text-slate-500">{fmt.datetime(c.createdAt)}</p>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="font-mono font-medium text-green-400 text-base">
+                          {fmt.money(c.totalSemanal)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="font-mono text-slate-300">{c.numAbonos}</span>
+                      </td>
+                      <td>
+                        <span className="font-mono text-slate-400">{c.numClientes ?? '—'}</span>
+                      </td>
+                      <td>
+                        <span className="font-mono text-slate-400">{c.numPrestamos ?? '—'}</span>
+                      </td>
+                      <td>
+                        <span className="text-xs text-slate-500 italic">
+                          {c.descripcion ?? '—'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal */}

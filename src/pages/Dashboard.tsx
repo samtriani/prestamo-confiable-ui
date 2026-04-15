@@ -190,7 +190,7 @@ export default function Dashboard() {
       </div>
 
       {/* Barra de corte */}
-      <div className="ec-card p-4 flex items-center justify-between gap-4 animate-fade-up stagger-4">
+      <div className="ec-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-up stagger-4">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-green-600/15 flex items-center justify-center shrink-0">
             <TrendingUp size={18} className="text-green-400" />
@@ -230,7 +230,7 @@ export default function Dashboard() {
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-600/15 text-green-400 border border-green-600/25 hover:bg-green-600/25 transition-colors"
               >
                 <Download size={12} />
-                Descargar reporte
+                <span className="hidden sm:inline">Descargar reporte</span>
               </button>
             )}
             <button
@@ -242,90 +242,129 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="ec-card overflow-hidden">
-          {isLoading ? (
-            <div className="p-8 text-center text-slate-500 text-sm">Cargando...</div>
-          ) : activos.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-sm">No hay préstamos activos</div>
-          ) : (
-            <table className="ec-table">
-              <thead>
-                <tr>
-                  <th>Cliente</th>
-                  <th>Préstamo</th>
-                  <th>Pago semanal</th>
-                  <th>Progreso</th>
-                  <th>Saldo</th>
-                  <th>Corrida</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activos.map((p: PrestamoResumen, i) => (
-                  <tr
-                    key={p.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/clientes/${p.clienteId}`)}
-                    style={{ animationDelay: `${i * 30}ms` }}
-                  >
-                    <td>
-                      <div>
-                        <p className="font-medium text-slate-100 text-sm">{p.clienteNombre}</p>
-                        <p className="text-xs text-slate-500 font-mono">{p.clienteNumero}</p>
+        {isLoading ? (
+          <div className="ec-card p-8 text-center text-slate-500 text-sm">Cargando...</div>
+        ) : activos.length === 0 ? (
+          <div className="ec-card p-8 text-center text-slate-500 text-sm">No hay préstamos activos</div>
+        ) : (
+          <>
+            {/* ── MOBILE: cards ─────────────────────────────────── */}
+            <div className="md:hidden space-y-2">
+              {activos.map((p: PrestamoResumen, i) => (
+                <div
+                  key={p.id}
+                  className="ec-card p-4 cursor-pointer active:bg-navy-700 transition-colors animate-fade-in"
+                  style={{ animationDelay: `${i * 30}ms` }}
+                  onClick={() => navigate(`/clientes/${p.clienteId}`)}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-100 text-sm truncate">{p.clienteNombre}</p>
+                      <p className="text-xs font-mono text-slate-500">{p.clienteNumero} · {p.numero}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-mono text-sm text-slate-300">{fmt.money(p.saldoPendiente ?? 0)}</p>
+                      <p className="text-[10px] text-slate-500">saldo</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-green-400">{fmt.money(p.pagoSemanal)}/sem</span>
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <div className="flex-1 h-1.5 bg-navy-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-green-500 rounded-full"
+                          style={{ width: `${Math.round(((p.pagosCubiertos ?? 0) / 14) * 100)}%` }}
+                        />
                       </div>
-                    </td>
-                    <td>
-                      <span className="font-mono text-xs text-slate-400">{p.numero}</span>
-                    </td>
-                    <td>
-                      <span className="font-mono text-green-400">{fmt.money(p.pagoSemanal)}</span>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 h-1.5 bg-navy-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-green-500 rounded-full transition-all"
-                            style={{ width: `${Math.round(((p.pagosCubiertos ?? 0) / 14) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-slate-500 font-mono tabular-nums">
-                          {p.pagosCubiertos ?? 0}/14
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`font-mono text-sm ${(p.saldoPendiente ?? 0) > 0 ? 'text-slate-300' : 'text-green-400'}`}>
-                        {fmt.money(p.saldoPendiente ?? 0)}
+                      <span className="text-[10px] font-mono text-slate-500 tabular-nums shrink-0">
+                        {p.pagosCubiertos ?? 0}/14
                       </span>
-                    </td>
-                    <td>
-                      {/* Mini corrida */}
-                      <div className="flex gap-1">
-                        {Array.from({ length: 14 }, (_, i) => {
-                          const cubiertos  = p.pagosCubiertos ?? 0
-                          const sinCorte   = p.pagosSinCorte  ?? 0
-                          const pagados    = cubiertos - sinCorte   // PAGADO (verde, ya en corte)
-                          const atrasados  = p.pagosAtrasados ?? 0
-                          let color = '#374151'
-                          if (i < pagados)                    color = '#22c55e'  // verde — ya cortado
-                          else if (i < cubiertos)             color = '#f97316'  // naranja — sin corte
-                          else if (i < cubiertos + atrasados) color = '#ef4444'  // rojo
-                          else if (i === cubiertos + atrasados) color = '#3b82f6' // azul — próximo
-                          return (
-                            <span
-                              key={i}
-                              className="w-2.5 h-2.5 rounded-sm"
-                              style={{ backgroundColor: color }}
-                            />
-                          )
-                        })}
-                      </div>
-                    </td>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── DESKTOP: tabla ────────────────────────────────── */}
+            <div className="hidden md:block ec-card overflow-hidden">
+              <table className="ec-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Préstamo</th>
+                    <th>Pago semanal</th>
+                    <th>Progreso</th>
+                    <th>Saldo</th>
+                    <th>Corrida</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {activos.map((p: PrestamoResumen, i) => (
+                    <tr
+                      key={p.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/clientes/${p.clienteId}`)}
+                      style={{ animationDelay: `${i * 30}ms` }}
+                    >
+                      <td>
+                        <div>
+                          <p className="font-medium text-slate-100 text-sm">{p.clienteNombre}</p>
+                          <p className="text-xs text-slate-500 font-mono">{p.clienteNumero}</p>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="font-mono text-xs text-slate-400">{p.numero}</span>
+                      </td>
+                      <td>
+                        <span className="font-mono text-green-400">{fmt.money(p.pagoSemanal)}</span>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-1.5 bg-navy-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-green-500 rounded-full transition-all"
+                              style={{ width: `${Math.round(((p.pagosCubiertos ?? 0) / 14) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-slate-500 font-mono tabular-nums">
+                            {p.pagosCubiertos ?? 0}/14
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`font-mono text-sm ${(p.saldoPendiente ?? 0) > 0 ? 'text-slate-300' : 'text-green-400'}`}>
+                          {fmt.money(p.saldoPendiente ?? 0)}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-1">
+                          {Array.from({ length: 14 }, (_, i) => {
+                            const cubiertos  = p.pagosCubiertos ?? 0
+                            const sinCorte   = p.pagosSinCorte  ?? 0
+                            const pagados    = cubiertos - sinCorte
+                            const atrasados  = p.pagosAtrasados ?? 0
+                            let color = '#374151'
+                            if (i < pagados)                    color = '#22c55e'
+                            else if (i < cubiertos)             color = '#f97316'
+                            else if (i < cubiertos + atrasados) color = '#ef4444'
+                            else if (i === cubiertos + atrasados) color = '#3b82f6'
+                            return (
+                              <span
+                                key={i}
+                                className="w-2.5 h-2.5 rounded-sm"
+                                style={{ backgroundColor: color }}
+                              />
+                            )
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal corte */}

@@ -70,35 +70,39 @@ export default function DetalleCliente() {
     <div className="space-y-5 animate-fade-up">
 
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <button
           onClick={() => navigate('/clientes')}
-          className="p-2 rounded-xl hover:bg-navy-800 text-slate-400 hover:text-slate-200 transition-colors"
+          className="p-2 rounded-xl hover:bg-navy-800 text-slate-400 hover:text-slate-200 transition-colors mt-0.5 shrink-0"
         >
           <ArrowLeft size={16} />
         </button>
-        <div className="flex items-center gap-4 flex-1">
-          <div className="w-11 h-11 rounded-full bg-navy-700 border border-white/10 flex items-center justify-center shrink-0">
-            <span className="font-display font-bold text-sm text-slate-300">
-              {fmt.initials(cliente.nombre)}
-            </span>
-          </div>
-          <div>
-            <h1 className="font-display font-bold text-lg leading-none">{cliente.nombre}</h1>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">{cliente.numero}</p>
-          </div>
-          <div className="ml-auto flex items-center gap-4 text-xs text-slate-500">
-            {cliente.telefono && (
-              <span className="flex items-center gap-1.5">
-                <Phone size={12} /> {cliente.telefono}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-navy-700 border border-white/10 flex items-center justify-center shrink-0">
+              <span className="font-display font-bold text-sm text-slate-300">
+                {fmt.initials(cliente.nombre)}
               </span>
-            )}
-            {cliente.domicilio && (
-              <span className="flex items-center gap-1.5 max-w-xs truncate">
-                <MapPin size={12} /> {cliente.domicilio}
-              </span>
-            )}
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-display font-bold text-lg leading-none truncate">{cliente.nombre}</h1>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">{cliente.numero}</p>
+            </div>
           </div>
+          {(cliente.telefono || cliente.domicilio) && (
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2 ml-14">
+              {cliente.telefono && (
+                <span className="flex items-center gap-1.5">
+                  <Phone size={12} /> {cliente.telefono}
+                </span>
+              )}
+              {cliente.domicilio && (
+                <span className="flex items-center gap-1.5 truncate max-w-full">
+                  <MapPin size={12} /> {cliente.domicilio}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -229,7 +233,7 @@ export default function DetalleCliente() {
             <p className="text-slate-400">Cliente: <span className="text-slate-200 font-medium">{cliente.nombre}</span></p>
             <p className="text-slate-500 text-xs mt-0.5">{cliente.numero}</p>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Monto del préstamo ($)"
               type="number" min="100" step="100"
@@ -284,26 +288,26 @@ function PrestamoActivo({
   return (
     <div className="ec-card overflow-hidden">
       {/* Header del préstamo */}
-      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="px-4 py-4 border-b border-white/5">
+        <div className="flex items-center gap-3 mb-3">
           <Badge estado="PROXIMO" />
           <span className="font-mono text-sm text-slate-400">{prestamo.numero}</span>
           <span className="font-display font-bold text-xl text-slate-100">
             {fmt.money(prestamo.monto)}
           </span>
         </div>
-        <div className="flex items-center gap-6 text-right text-sm">
-          <div>
-            <p className="text-xs text-slate-500">Pago semanal</p>
-            <p className="font-mono text-green-400 font-medium">{fmt.money(prestamo.pagoSemanal)}</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2.5 rounded-lg bg-navy-700/50">
+            <p className="text-[10px] text-slate-500">Pago semanal</p>
+            <p className="font-mono text-green-400 font-medium text-sm mt-0.5">{fmt.money(prestamo.pagoSemanal)}</p>
           </div>
-          <div>
-            <p className="text-xs text-slate-500">Total abonado</p>
-            <p className="font-mono text-slate-200 font-medium">{fmt.money(prestamo.totalAbonado ?? 0)}</p>
+          <div className="p-2.5 rounded-lg bg-navy-700/50">
+            <p className="text-[10px] text-slate-500">Total abonado</p>
+            <p className="font-mono text-slate-200 font-medium text-sm mt-0.5">{fmt.money(prestamo.totalAbonado ?? 0)}</p>
           </div>
-          <div>
-            <p className="text-xs text-slate-500">Saldo pendiente</p>
-            <p className="font-mono text-orange-400 font-medium">{fmt.money(prestamo.saldoPendiente ?? 0)}</p>
+          <div className="p-2.5 rounded-lg bg-navy-700/50">
+            <p className="text-[10px] text-slate-500">Saldo pendiente</p>
+            <p className="font-mono text-orange-400 font-medium text-sm mt-0.5">{fmt.money(prestamo.saldoPendiente ?? 0)}</p>
           </div>
         </div>
       </div>
@@ -348,7 +352,7 @@ function PrestamoActivo({
             <PagoGrid pagos={pagos} size="md" onPagoClick={onAbonarPago} />
 
             {/* Detalle por pago */}
-            <div className="grid grid-cols-7 gap-2 mt-4">
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mt-4">
               {pagos.map((pago: Pago) => {
                 const cfg = estadoConfig[pago.estado]
                 const isPagable = ['PROXIMO', 'ATRASADO', 'PENDIENTE'].includes(pago.estado)
@@ -356,7 +360,7 @@ function PrestamoActivo({
                   <button
                     key={pago.id}
                     onClick={() => isPagable && onAbonarPago(pago)}
-                    className={`p-2.5 rounded-xl border text-left transition-all duration-150 ${
+                    className={`p-2.5 rounded-xl border text-left transition-all duration-150 active:scale-95 ${
                       isPagable ? 'cursor-pointer hover:border-white/20' : 'cursor-default'
                     }`}
                     style={{

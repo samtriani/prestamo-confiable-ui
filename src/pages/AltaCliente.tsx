@@ -74,8 +74,8 @@ export default function AltaCliente() {
               Datos personales
             </span>
           </div>
-          <div className="p-5 grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
               <Input
                 label="Nombre completo"
                 placeholder="Nombre del cliente"
@@ -88,7 +88,7 @@ export default function AltaCliente() {
               placeholder="55 0000 0000"
               {...register('telefono')}
             />
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <Input
                 label="Domicilio"
                 placeholder="Calle, número, colonia, CP, municipio"
@@ -106,7 +106,7 @@ export default function AltaCliente() {
               Datos del préstamo
             </span>
           </div>
-          <div className="p-5 grid grid-cols-2 gap-4">
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Monto del préstamo ($)"
               type="number"
@@ -174,7 +174,7 @@ export default function AltaCliente() {
               </span>
             </div>
             <div className="p-5">
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                 {corrida.map((fecha, i) => (
                   <div
                     key={i}
