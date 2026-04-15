@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Filter } from 'lucide-react'
+import { Filter, Search } from 'lucide-react'
 import { usePrestamosActivos } from '@/hooks'
 import { estadoConfig } from '@/utils/estadoPago'
 import { fmt } from '@/utils/format'
@@ -12,8 +12,15 @@ export default function ControlPagos() {
   const navigate               = useNavigate()
   const { data = [], isLoading } = usePrestamosActivos()
   const [filtro, setFiltro]    = useState<Filtro>('TODOS')
+  const [query, setQuery]      = useState('')
 
-  const filtered = data.filter((p: PrestamoResumen) => {
+  const byQuery = data.filter((p: PrestamoResumen) =>
+    p.clienteNombre?.toLowerCase().includes(query.toLowerCase()) ||
+    p.clienteNumero?.toLowerCase().includes(query.toLowerCase()) ||
+    (p.clienteTelefono ?? '').includes(query)
+  )
+
+  const filtered = byQuery.filter((p: PrestamoResumen) => {
     if (filtro === 'TODOS')             return true
     if (filtro === 'ATRASADO')          return (p.pagosAtrasados ?? 0) > 0
     if (filtro === 'PROXIMO')           return (p.pagosAtrasados ?? 0) === 0
@@ -22,10 +29,10 @@ export default function ControlPagos() {
   })
 
   const FILTROS: { key: Filtro; label: string }[] = [
-    { key: 'TODOS',           label: `Todos (${data.length})` },
-    { key: 'ATRASADO',        label: `Atrasados (${data.filter((p: PrestamoResumen) => (p.pagosAtrasados ?? 0) > 0).length})` },
-    { key: 'PROXIMO',         label: `Al corriente (${data.filter((p: PrestamoResumen) => (p.pagosAtrasados ?? 0) === 0).length})` },
-    { key: 'PAGADO_SIN_CORTE',label: `Con abonos (${data.filter((p: PrestamoResumen) => (p.semanalSinCorte ?? 0) > 0).length})` },
+    { key: 'TODOS',           label: `Todos (${byQuery.length})` },
+    { key: 'ATRASADO',        label: `Atrasados (${byQuery.filter((p: PrestamoResumen) => (p.pagosAtrasados ?? 0) > 0).length})` },
+    { key: 'PROXIMO',         label: `Al corriente (${byQuery.filter((p: PrestamoResumen) => (p.pagosAtrasados ?? 0) === 0).length})` },
+    { key: 'PAGADO_SIN_CORTE',label: `Con abonos (${byQuery.filter((p: PrestamoResumen) => (p.semanalSinCorte ?? 0) > 0).length})` },
   ]
 
   return (
@@ -43,6 +50,17 @@ export default function ControlPagos() {
             </div>
           )
         })}
+      </div>
+
+      {/* Búsqueda */}
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+        <input
+          className="ec-input pl-8 w-full"
+          placeholder="Buscar por nombre, número o teléfono..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
       </div>
 
       {/* Filtros */}
@@ -67,7 +85,9 @@ export default function ControlPagos() {
         {isLoading ? (
           <div className="p-10 text-center text-slate-500 text-sm">Cargando…</div>
         ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-slate-500 text-sm">Sin resultados para este filtro</div>
+          <div className="p-10 text-center text-slate-500 text-sm">
+            {query ? `No se encontró "${query}"` : 'Sin resultados para este filtro'}
+          </div>
         ) : (
           <table className="ec-table">
             <thead>
