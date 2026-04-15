@@ -21,7 +21,7 @@ export default function MiCredito() {
     <div className="min-h-screen bg-navy-950 flex flex-col">
 
       {/* Header */}
-      <header className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-white/5 bg-navy-950/80 backdrop-blur-sm">
+      <header className="h-14 shrink-0 flex items-center justify-between px-4 sm:px-6 border-b border-white/5 bg-navy-950/80 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-green-600/20 flex items-center justify-center">
             <DollarSign size={14} className="text-green-400" />
@@ -29,7 +29,7 @@ export default function MiCredito() {
           <span className="font-display font-bold text-sm text-slate-200">Empeña Confiable</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-400">{user?.nombre}</span>
+          <span className="text-sm text-slate-400 truncate max-w-[120px] sm:max-w-none">{user?.nombre}</span>
           <button
             onClick={logout}
             title="Cerrar sesión"
@@ -41,7 +41,7 @@ export default function MiCredito() {
       </header>
 
       {/* Contenido */}
-      <main className="flex-1 flex items-start justify-center p-6">
+      <main className="flex-1 flex items-start justify-center p-4 sm:p-6">
         <div className="w-full max-w-2xl space-y-5 animate-fade-up">
 
           <div>
@@ -256,28 +256,29 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
 
       {/* Card principal */}
       <div className="ec-card overflow-hidden">
+
         {/* Header */}
-        <div className="px-6 py-5 border-b border-white/5">
-          <div className="flex items-start justify-between">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-white/5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs text-slate-500 font-mono">{prestamo.numero}</p>
-              <p className="text-3xl font-display font-bold text-slate-100 mt-1">
+              <p className="text-2xl sm:text-3xl font-display font-bold text-slate-100 mt-1">
                 {fmt.money(prestamo.monto)}
               </p>
               <p className="text-xs text-slate-500 mt-1">
                 Inicio: {fmt.date(prestamo.fechaInicio)}
               </p>
             </div>
-            <div className="flex flex-col items-end gap-3">
-              <div className="text-right">
+            <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3">
+              <div className="sm:text-right">
                 <p className="text-xs text-slate-500">Pago semanal</p>
-                <p className="text-2xl font-display font-bold text-green-400 mt-0.5">
+                <p className="text-xl sm:text-2xl font-display font-bold text-green-400 mt-0.5">
                   {fmt.money(prestamo.pagoSemanal)}
                 </p>
               </div>
               <button
                 onClick={() => generarPDF(prestamo, nombreCliente)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600/15 text-green-400 border border-green-600/25 hover:bg-green-600/25 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600/15 text-green-400 border border-green-600/25 hover:bg-green-600/25 transition-colors shrink-0"
               >
                 <Download size={12} />
                 Descargar PDF
@@ -288,18 +289,18 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
 
         {/* Stats */}
         <div className="grid grid-cols-2 divide-x divide-white/5 border-b border-white/5">
-          <div className="px-5 py-4 text-center">
+          <div className="px-4 sm:px-5 py-3 sm:py-4 text-center">
             <p className="text-xs text-slate-500 mb-1">Total abonado</p>
-            <p className="font-mono font-bold text-slate-200">{fmt.money(prestamo.totalAbonado ?? 0)}</p>
+            <p className="font-mono font-bold text-slate-200 text-sm sm:text-base">{fmt.money(prestamo.totalAbonado ?? 0)}</p>
           </div>
-          <div className="px-5 py-4 text-center">
+          <div className="px-4 sm:px-5 py-3 sm:py-4 text-center">
             <p className="text-xs text-slate-500 mb-1">Saldo pendiente</p>
-            <p className="font-mono font-bold text-orange-400">{fmt.money(prestamo.saldoPendiente ?? 0)}</p>
+            <p className="font-mono font-bold text-orange-400 text-sm sm:text-base">{fmt.money(prestamo.saldoPendiente ?? 0)}</p>
           </div>
         </div>
 
         {/* Progreso */}
-        <div className="px-6 py-4 border-b border-white/5">
+        <div className="px-4 sm:px-6 py-4 border-b border-white/5">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-slate-500">Progreso del crédito</span>
             <span className="text-xs font-mono text-slate-400">
@@ -315,7 +316,7 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
         </div>
 
         {/* Corrida de pagos */}
-        <div className="px-6 py-5">
+        <div className="px-4 sm:px-6 py-4 sm:py-5">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4">
             Corrida de 14 pagos
           </p>
@@ -333,51 +334,44 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
             })}
           </div>
 
-          {/* Grid 7+7 */}
-          <div className="space-y-2">
-            {[0, 7].map(offset => (
-              <div key={offset} className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 7 }, (_, i) => {
-                  const n         = offset + i
-                  const cubiertos = prestamo.pagosCubiertos ?? 0
-                  const atras     = prestamo.pagosAtrasados ?? 0
+          {/* Grid de pagos: 4 columnas en móvil, 7 en sm+ */}
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2">
+            {Array.from({ length: 14 }, (_, n) => {
+              const cubiertos = prestamo.pagosCubiertos ?? 0
+              const atras     = prestamo.pagosAtrasados ?? 0
 
-                  // PAGADO_SIN_CORTE se muestra igual que PAGADO para el cliente
-                  let estado: 'PAGADO' | 'PROXIMO' | 'ATRASADO' | 'PENDIENTE' = 'PENDIENTE'
-                  if (n < cubiertos)                estado = 'PAGADO'
-                  else if (n < cubiertos + atras)   estado = 'ATRASADO'
-                  else if (n === cubiertos + atras)  estado = 'PROXIMO'
+              let estado: 'PAGADO' | 'PROXIMO' | 'ATRASADO' | 'PENDIENTE' = 'PENDIENTE'
+              if (n < cubiertos)                estado = 'PAGADO'
+              else if (n < cubiertos + atras)   estado = 'ATRASADO'
+              else if (n === cubiertos + atras)  estado = 'PROXIMO'
 
-                  // Fecha del pago: fechaPrimerPago + n semanas
-                  const fechaPago = new Date(prestamo.fechaPrimerPago + 'T12:00:00')
-                  fechaPago.setDate(fechaPago.getDate() + n * 7)
-                  const labelFecha = fechaPago.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+              const fechaPago = new Date(prestamo.fechaPrimerPago + 'T12:00:00')
+              fechaPago.setDate(fechaPago.getDate() + n * 7)
+              const labelFecha = fechaPago.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' })
 
-                  const cfg = estadoConfig[estado]
-                  return (
-                    <div
-                      key={n}
-                      className="rounded-xl p-2 border text-center"
-                      style={{ backgroundColor: cfg.hex + '11', borderColor: cfg.hex + '33' }}
-                    >
-                      <p className="text-[10px] font-mono font-medium" style={{ color: cfg.hex }}>
-                        #{n + 1}
-                      </p>
-                      <p className="text-[9px] text-slate-500 leading-tight mt-0.5 mb-1">{labelFecha}</p>
-                      <span
-                        className="w-2 h-2 rounded-full mx-auto block"
-                        style={{ backgroundColor: cfg.hex }}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
+              const cfg = estadoConfig[estado]
+              return (
+                <div
+                  key={n}
+                  className="rounded-xl p-1.5 sm:p-2 border text-center"
+                  style={{ backgroundColor: cfg.hex + '11', borderColor: cfg.hex + '33' }}
+                >
+                  <p className="text-[10px] font-mono font-medium" style={{ color: cfg.hex }}>
+                    #{n + 1}
+                  </p>
+                  <p className="text-[9px] text-slate-500 leading-tight mt-0.5 mb-1">{labelFecha}</p>
+                  <span
+                    className="w-2 h-2 rounded-full mx-auto block"
+                    style={{ backgroundColor: cfg.hex }}
+                  />
+                </div>
+              )
+            })}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-navy-900/50 border-t border-white/5 flex items-center gap-2">
+        <div className="px-4 sm:px-6 py-4 bg-navy-900/50 border-t border-white/5 flex items-center gap-2">
           <Clock size={12} className="text-slate-600" />
           <p className="text-xs text-slate-600">
             Primer pago: {fmt.date(prestamo.fechaPrimerPago)} · Actualizado en tiempo real
