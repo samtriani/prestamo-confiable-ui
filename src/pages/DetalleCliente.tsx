@@ -5,7 +5,7 @@ import {
   useCliente, useHistorialCliente,
   usePagosPrestamo, useRegistrarAbono, useNuevoPrestamo,
 } from '@/hooks'
-import { Badge, Button, Modal, PagoGrid, Input } from '@/components/ui'
+import { Badge, Button, Modal, PagoGrid, Input, DateInput } from '@/components/ui'
 import { fmt } from '@/utils/format'
 import { estadoConfig } from '@/utils/estadoPago'
 import type { Pago, PrestamoResumen } from '@/types'
@@ -242,17 +242,15 @@ export default function DetalleCliente() {
                 {pagoSemanalNuevo > 0 ? fmt.money(pagoSemanalNuevo) : '—'}
               </div>
             </div>
-            <Input
+            <DateInput
               label="Fecha de inicio"
-              type="date"
               value={nuevoForm.fechaInicio}
-              onChange={e => setNuevoForm(f => ({ ...f, fechaInicio: e.target.value }))}
+              onChange={iso => setNuevoForm(f => ({ ...f, fechaInicio: iso }))}
             />
-            <Input
+            <DateInput
               label="Primer sábado de pago"
-              type="date"
               value={nuevoForm.fechaPrimerPago}
-              onChange={e => setNuevoForm(f => ({ ...f, fechaPrimerPago: e.target.value }))}
+              onChange={iso => setNuevoForm(f => ({ ...f, fechaPrimerPago: iso }))}
             />
           </div>
           <div className="flex gap-2 pt-1">

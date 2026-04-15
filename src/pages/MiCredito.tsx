@@ -347,7 +347,7 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
 
               const fechaPago = new Date(prestamo.fechaPrimerPago + 'T12:00:00')
               fechaPago.setDate(fechaPago.getDate() + n * 7)
-              const labelFecha = fechaPago.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' })
+              const labelFecha = fechaPago.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: '2-digit' })
 
               const cfg = estadoConfig[estado]
               return (
