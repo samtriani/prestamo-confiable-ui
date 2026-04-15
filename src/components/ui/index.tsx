@@ -60,8 +60,9 @@ export function Button({
 }
 
 // ── Input ─────────────────────────────────────────────────────────
-import { forwardRef, useState, useEffect } from 'react'
+import { forwardRef, useState, useEffect, useRef } from 'react'
 import type { InputHTMLAttributes } from 'react'
+import { CalendarDays } from 'lucide-react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?:   string
@@ -121,15 +122,22 @@ interface DateInputProps {
 
 export function DateInput({ label, error, hint, value = '', onChange, disabled, className }: DateInputProps) {
   const [display, setDisplay] = useState(() => isoToDisplay(value))
+  const pickerRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setDisplay(isoToDisplay(value))
   }, [value])
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleTextChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
     setDisplay(buildDisplay(digits))
     onChange?.(digits.length === 8 ? digitsToISO(digits) : '')
+  }
+
+  function handlePickerChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const iso = e.target.value  // yyyy-mm-dd
+    setDisplay(isoToDisplay(iso))
+    onChange?.(iso)
   }
 
   return (
@@ -139,16 +147,38 @@ export function DateInput({ label, error, hint, value = '', onChange, disabled, 
           {label}
         </label>
       )}
-      <input
-        type="text"
-        inputMode="numeric"
-        className={cn('ec-input', error && 'border-red-500/60 focus:border-red-500', className)}
-        placeholder="dd/mm/aaaa"
-        value={display}
-        onChange={handleChange}
-        maxLength={10}
-        disabled={disabled}
-      />
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="numeric"
+          className={cn('ec-input pr-9', error && 'border-red-500/60 focus:border-red-500', className)}
+          placeholder="dd/mm/aaaa"
+          value={display}
+          onChange={handleTextChange}
+          maxLength={10}
+          disabled={disabled}
+        />
+        {/* Ícono que dispara el picker nativo */}
+        <button
+          type="button"
+          tabIndex={-1}
+          disabled={disabled}
+          onClick={() => pickerRef.current?.showPicker()}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-30"
+        >
+          <CalendarDays size={14} />
+        </button>
+        {/* Date picker nativo invisible, solo para el calendario */}
+        <input
+          ref={pickerRef}
+          type="date"
+          value={value}
+          onChange={handlePickerChange}
+          disabled={disabled}
+          tabIndex={-1}
+          className="absolute inset-0 opacity-0 pointer-events-none"
+        />
+      </div>
       {error && <p className="text-xs text-red-400">{error}</p>}
       {hint && !error && <p className="text-xs text-slate-500">{hint}</p>}
     </div>
