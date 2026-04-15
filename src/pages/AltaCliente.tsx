@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { ArrowLeft, Calculator, User, DollarSign, Calendar } from 'lucide-react'
 import { useAltaCliente } from '@/hooks'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, DateInput } from '@/components/ui'
 import { fmt } from '@/utils/format'
 import type { ClienteRequest } from '@/types'
 
@@ -22,7 +22,7 @@ export default function AltaCliente() {
   const [sugerido] = useState(() => proximoSabado())
 
   const {
-    register, handleSubmit, watch,
+    register, handleSubmit, watch, control,
     formState: { errors },
   } = useForm<ClienteRequest>({ defaultValues: { fechaPrimerPago: sugerido } })
 
@@ -131,18 +131,32 @@ export default function AltaCliente() {
               </div>
               <p className="text-xs text-slate-500">Calculado automáticamente</p>
             </div>
-            <Input
-              label="Fecha de inicio"
-              type="date"
-              error={errors.fechaInicio?.message}
-              {...register('fechaInicio', { required: 'La fecha es obligatoria' })}
+            <Controller
+              name="fechaInicio"
+              control={control}
+              rules={{ required: 'La fecha es obligatoria' }}
+              render={({ field }) => (
+                <DateInput
+                  label="Fecha de inicio"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  error={errors.fechaInicio?.message}
+                />
+              )}
             />
-            <Input
-              label="Primer sábado de pago"
-              type="date"
-              hint={`Próximo sábado: ${fmt.date(sugerido)}`}
-              error={errors.fechaPrimerPago?.message}
-              {...register('fechaPrimerPago', { required: 'La fecha de pago es obligatoria' })}
+            <Controller
+              name="fechaPrimerPago"
+              control={control}
+              rules={{ required: 'La fecha de pago es obligatoria' }}
+              render={({ field }) => (
+                <DateInput
+                  label="Primer sábado de pago"
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  hint={`Próximo sábado: ${fmt.date(sugerido)}`}
+                  error={errors.fechaPrimerPago?.message}
+                />
+              )}
             />
           </div>
         </div>

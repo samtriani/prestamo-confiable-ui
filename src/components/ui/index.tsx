@@ -60,7 +60,7 @@ export function Button({
 }
 
 // ── Input ─────────────────────────────────────────────────────────
-import { forwardRef } from 'react'
+import { forwardRef, useState, useEffect } from 'react'
 import type { InputHTMLAttributes } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -89,6 +89,71 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     )
   }
 )
+
+// ── DateInput ─────────────────────────────────────────────────────
+// Acepta y muestra en dd/mm/aaaa; almacena/emite en yyyy-mm-dd
+
+function isoToDisplay(iso: string): string {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return ''
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+function buildDisplay(digits: string): string {
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
+function digitsToISO(digits: string): string {
+  return `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`
+}
+
+interface DateInputProps {
+  label?:    string
+  error?:    string
+  hint?:     string
+  value?:    string          // yyyy-mm-dd
+  onChange?: (iso: string) => void
+  disabled?: boolean
+  className?: string
+}
+
+export function DateInput({ label, error, hint, value = '', onChange, disabled, className }: DateInputProps) {
+  const [display, setDisplay] = useState(() => isoToDisplay(value))
+
+  useEffect(() => {
+    setDisplay(isoToDisplay(value))
+  }, [value])
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
+    setDisplay(buildDisplay(digits))
+    onChange?.(digits.length === 8 ? digitsToISO(digits) : '')
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {label && (
+        <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+          {label}
+        </label>
+      )}
+      <input
+        type="text"
+        inputMode="numeric"
+        className={cn('ec-input', error && 'border-red-500/60 focus:border-red-500', className)}
+        placeholder="dd/mm/aaaa"
+        value={display}
+        onChange={handleChange}
+        maxLength={10}
+        disabled={disabled}
+      />
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      {hint && !error && <p className="text-xs text-slate-500">{hint}</p>}
+    </div>
+  )
+}
 
 // ── Select ────────────────────────────────────────────────────────
 import type { SelectHTMLAttributes } from 'react'

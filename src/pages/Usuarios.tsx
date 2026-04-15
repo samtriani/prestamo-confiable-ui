@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { UserPlus, ShieldCheck, User, Power, Eye, EyeOff, CreditCard, Pencil } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { UserPlus, ShieldCheck, User, Power, Eye, EyeOff, CreditCard, Pencil, Search, X } from 'lucide-react'
 import { useUsuarios, useCrearUsuario, useToggleUsuario, useEditarUsuario, useClientes } from '@/hooks'
 import { Button, Modal } from '@/components/ui'
 import { fmt } from '@/utils/format'
@@ -370,21 +370,97 @@ function ClienteSelector({ clientes, value, onChange }: {
   value: string
   onChange: (id: string) => void
 }) {
+  const selected   = clientes.find(c => c.id === value) ?? null
+  const [query, setQuery]     = useState('')
+  const [open, setOpen]       = useState(false)
+  const containerRef           = useRef<HTMLDivElement>(null)
+
+  // Cierra el dropdown al hacer clic fuera
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  const filtered = clientes.filter(c => {
+    const q = query.toLowerCase()
+    return c.nombre.toLowerCase().includes(q) || c.numero.toLowerCase().includes(q)
+  })
+
+  function select(c: Cliente) {
+    onChange(c.id)
+    setOpen(false)
+    setQuery('')
+  }
+
+  function clear() {
+    onChange('')
+    setQuery('')
+  }
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Cliente asociado</label>
-      <select
-        className="ec-input"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      >
-        <option value="">— Selecciona un cliente —</option>
-        {clientes.map((c: Cliente) => (
-          <option key={c.id} value={c.id}>
-            {c.numero} · {c.nombre}
-          </option>
-        ))}
-      </select>
+    <div className="flex flex-col gap-1.5" ref={containerRef}>
+      <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+        Cliente asociado
+      </label>
+
+      {/* Campo de búsqueda / seleccionado */}
+      <div className="relative">
+        {selected && !open ? (
+          // Muestra el cliente seleccionado
+          <div className="ec-input flex items-center justify-between gap-2">
+            <span className="text-slate-200 text-sm truncate">
+              <span className="font-mono text-slate-500 mr-1.5">{selected.numero}</span>
+              {selected.nombre}
+            </span>
+            <button
+              type="button"
+              onClick={clear}
+              className="shrink-0 text-slate-500 hover:text-red-400 transition-colors"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <input
+              className="ec-input pl-8"
+              placeholder="Buscar por nombre o número…"
+              value={query}
+              autoComplete="off"
+              onFocus={() => setOpen(true)}
+              onChange={e => { setQuery(e.target.value); setOpen(true) }}
+            />
+          </div>
+        )}
+
+        {/* Dropdown */}
+        {open && (
+          <div className="absolute z-50 top-full mt-1 w-full rounded-xl border border-white/10 bg-navy-900 shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="px-3 py-2.5 text-xs text-slate-500">Sin resultados</p>
+            ) : (
+              filtered.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onMouseDown={() => select(c)}
+                  className="w-full text-left px-3 py-2.5 text-sm hover:bg-navy-800 transition-colors flex items-center gap-2"
+                >
+                  <span className="font-mono text-[11px] text-slate-500 shrink-0">{c.numero}</span>
+                  <span className="text-slate-200 truncate">{c.nombre}</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
