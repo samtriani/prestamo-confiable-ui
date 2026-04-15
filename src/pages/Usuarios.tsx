@@ -341,7 +341,7 @@ function RolSelector({ value, onChange }: { value: Rol; onChange: (r: Rol) => vo
             key={rol}
             type="button"
             onClick={() => onChange(rol)}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+            className={`flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-xl border text-xs font-medium transition-all ${
               value === rol
                 ? rol === 'ADMIN'
                   ? 'bg-green-600/20 border-green-600/50 text-green-400'
@@ -352,10 +352,10 @@ function RolSelector({ value, onChange }: { value: Rol; onChange: (r: Rol) => vo
             }`}
           >
             {rol === 'ADMIN'
-              ? <ShieldCheck size={14} />
+              ? <ShieldCheck size={15} />
               : rol === 'CLIENTE'
-                ? <CreditCard size={14} />
-                : <User size={14} />
+                ? <CreditCard size={15} />
+                : <User size={15} />
             }
             {ROL_LABELS[rol]}
           </button>
