@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   AlertCircle, CheckCircle2, Clock, Phone,
-  ChevronRight, Search, Banknote, X,
+  Search, Banknote, X,
 } from 'lucide-react'
 import { useCobranza, useRegistrarAbonoCobranza } from '@/hooks'
 import { fmt } from '@/utils/format'
@@ -39,7 +39,7 @@ export default function CobranzaSemanal() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <StatCard
           label="Por cobrar"
           value={fmt.money(totalPorCobrar)}
@@ -159,7 +159,7 @@ function ItemRow({
   const accentColor = color === 'red' ? 'text-red-400' : 'text-blue-400'
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 hover:bg-navy-800/40 transition-colors">
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-navy-800/40 transition-colors">
 
       {/* Avatar */}
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 ${
@@ -177,29 +177,24 @@ function ItemRow({
           >
             {item.clienteNombre}
           </Link>
-          <span className="text-xs text-slate-600 font-mono shrink-0">{item.clienteNumero}</span>
+          <span className="text-xs text-slate-600 font-mono shrink-0 hidden sm:inline">{item.clienteNumero}</span>
         </div>
-        <div className="flex items-center gap-3 mt-0.5">
-          <span className="text-xs text-slate-500 font-mono">{item.prestamoNumero}</span>
-          <span className="text-xs text-slate-600">·</span>
-          <span className="text-xs text-slate-500">Pago #{item.numeroPago}</span>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <span className="text-xs text-slate-500 font-mono">{item.prestamoNumero} · Pago #{item.numeroPago}</span>
           {item.clienteTelefono && (
-            <>
-              <span className="text-xs text-slate-600">·</span>
-              <a
-                href={`tel:${item.clienteTelefono}`}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                <Phone size={10} />
-                {item.clienteTelefono}
-              </a>
-            </>
+            <a
+              href={`tel:${item.clienteTelefono}`}
+              className="hidden sm:flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <Phone size={10} />
+              {item.clienteTelefono}
+            </a>
           )}
         </div>
       </div>
 
       {/* Fecha y días vencido */}
-      <div className="text-right shrink-0">
+      <div className="text-right shrink-0 hidden sm:block">
         <p className="text-xs text-slate-400">{fmt.date(item.fechaProgramada)}</p>
         {item.diasVencido > 0 && (
           <p className={`text-[11px] font-medium ${accentColor}`}>
@@ -209,20 +204,24 @@ function ItemRow({
       </div>
 
       {/* Monto */}
-      <div className="text-right shrink-0 w-20">
+      <div className="text-right shrink-0">
         <p className="text-sm font-mono font-bold text-slate-200">
           {fmt.money(item.montoProgramado)}
         </p>
+        {item.diasVencido > 0 && (
+          <p className={`text-[10px] font-medium sm:hidden ${accentColor}`}>
+            {item.diasVencido}d
+          </p>
+        )}
       </div>
 
       {/* Botón */}
       <button
         onClick={() => onPagar(item)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600/15 text-green-400 border border-green-600/25 hover:bg-green-600/25 transition-colors shrink-0"
+        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-green-600/15 text-green-400 border border-green-600/25 hover:bg-green-600/25 active:bg-green-600/30 transition-colors shrink-0"
       >
-        <Banknote size={12} />
-        Registrar
-        <ChevronRight size={10} />
+        <Banknote size={14} />
+        <span className="hidden sm:inline">Registrar</span>
       </button>
     </div>
   )
@@ -336,13 +335,13 @@ function StatCard({
   icon?: React.ReactNode
 }) {
   return (
-    <div className="ec-card px-5 py-4">
+    <div className="ec-card px-3 sm:px-5 py-3 sm:py-4">
       <div className="flex items-center justify-between mb-1">
-        <p className="text-xs text-slate-500">{label}</p>
+        <p className="text-[10px] sm:text-xs text-slate-500 truncate">{label}</p>
         {icon}
       </div>
-      <p className={`text-2xl font-display font-bold ${color}`}>{value}</p>
-      <p className="text-xs text-slate-600 mt-0.5">{sub}</p>
+      <p className={`text-xl sm:text-2xl font-display font-bold ${color}`}>{value}</p>
+      <p className="text-[10px] sm:text-xs text-slate-600 mt-0.5 truncate">{sub}</p>
     </div>
   )
 }

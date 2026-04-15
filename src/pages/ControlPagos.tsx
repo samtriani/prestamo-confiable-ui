@@ -36,10 +36,10 @@ export default function ControlPagos() {
   ]
 
   return (
-    <div className="space-y-5 animate-fade-up">
+    <div className="space-y-4 animate-fade-up">
 
-      {/* Leyenda de colores */}
-      <div className="flex items-center gap-6 ec-card px-5 py-3">
+      {/* Leyenda de colores — oculta en mobile */}
+      <div className="hidden md:flex items-center gap-6 ec-card px-5 py-3">
         <Filter size={13} className="text-slate-500 shrink-0" />
         {(['PAGADO', 'ATRASADO', 'PAGADO_SIN_CORTE', 'PROXIMO', 'PENDIENTE'] as EstadoPago[]).map(e => {
           const cfg = estadoConfig[e]
@@ -64,7 +64,7 @@ export default function ControlPagos() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {FILTROS.map(f => (
           <button
             key={f.key}
@@ -80,111 +80,183 @@ export default function ControlPagos() {
         ))}
       </div>
 
-      {/* Tabla de control */}
-      <div className="ec-card overflow-hidden">
-        {isLoading ? (
-          <div className="p-10 text-center text-slate-500 text-sm">Cargando…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-slate-500 text-sm">
-            {query ? `No se encontró "${query}"` : 'Sin resultados para este filtro'}
-          </div>
-        ) : (
-          <table className="ec-table">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Préstamo</th>
-                <th>Pago sem.</th>
-                <th>Progreso</th>
-                <th>Sin corte</th>
-                <th>Saldo</th>
-                <th>Corrida de 14 pagos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p: PrestamoResumen, i) => {
-                const hasAtrasado = (p.pagosAtrasados ?? 0) > 0
-                return (
-                  <tr
-                    key={p.id}
-                    className="cursor-pointer animate-fade-in"
-                    style={{ animationDelay: `${i * 20}ms` }}
-                    onClick={() => navigate(`/clientes/${p.clienteId}`)}
-                  >
-                    <td>
-                      <div>
-                        <p className="font-medium text-slate-100 text-sm">{p.clienteNombre}</p>
-                        <p className="text-xs font-mono text-slate-500">{p.clienteNumero}</p>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="font-mono text-xs text-slate-400">{p.numero}</span>
-                    </td>
-                    <td>
+      {isLoading ? (
+        <div className="ec-card p-10 text-center text-slate-500 text-sm">Cargando…</div>
+      ) : filtered.length === 0 ? (
+        <div className="ec-card p-10 text-center text-slate-500 text-sm">
+          {query ? `No se encontró "${query}"` : 'Sin resultados para este filtro'}
+        </div>
+      ) : (
+        <>
+          {/* ── MOBILE: cards ─────────────────────────────────── */}
+          <div className="md:hidden space-y-2">
+            {filtered.map((p: PrestamoResumen, i) => {
+              const hasAtrasado = (p.pagosAtrasados ?? 0) > 0
+              const sinCorte    = Math.round((p.semanalSinCorte ?? 0) / p.pagoSemanal)
+              return (
+                <div
+                  key={p.id}
+                  className="ec-card p-4 cursor-pointer active:bg-navy-700 transition-colors animate-fade-in"
+                  style={{ animationDelay: `${i * 20}ms` }}
+                  onClick={() => navigate(`/clientes/${p.clienteId}`)}
+                >
+                  {/* Fila superior: nombre + saldo */}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-100 text-sm truncate">{p.clienteNombre}</p>
+                      <p className="text-xs font-mono text-slate-500">{p.clienteNumero} · {p.numero}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-mono text-sm text-slate-300">{fmt.money(p.saldoPendiente ?? 0)}</p>
+                      <p className="text-[10px] text-slate-500">saldo</p>
+                    </div>
+                  </div>
+
+                  {/* Corrida mini */}
+                  <div className="flex gap-0.5 mb-3">
+                    {Array.from({ length: 14 }, (_, idx) => {
+                      const cubiertos = p.pagosCubiertos ?? 0
+                      const atrasados = p.pagosAtrasados ?? 0
+                      let hex = estadoConfig.PENDIENTE.hex
+                      if (idx < cubiertos - sinCorte)          hex = estadoConfig.PAGADO.hex
+                      else if (idx < cubiertos)                hex = estadoConfig.PAGADO_SIN_CORTE.hex
+                      else if (idx < cubiertos + atrasados)    hex = estadoConfig.ATRASADO.hex
+                      else if (idx === cubiertos + atrasados)  hex = estadoConfig.PROXIMO.hex
+                      return (
+                        <span
+                          key={idx}
+                          className="flex-1 h-2.5 rounded-sm"
+                          style={{ backgroundColor: hex }}
+                        />
+                      )
+                    })}
+                  </div>
+
+                  {/* Fila inferior: pago semanal + progreso + sin corte */}
+                  <div className="flex items-center gap-4 text-xs">
+                    <div>
+                      <span className="text-slate-500">Sem. </span>
                       <span className="font-mono text-green-400 font-medium">{fmt.money(p.pagoSemanal)}</span>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 bg-navy-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.round(((p.pagosCubiertos ?? 0) / 14) * 100)}%`,
-                              backgroundColor: hasAtrasado ? '#ef4444' : '#22c55e',
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs text-slate-500 font-mono tabular-nums whitespace-nowrap">
-                          {p.pagosCubiertos ?? 0}/14
-                        </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-16 h-1.5 bg-navy-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.round(((p.pagosCubiertos ?? 0) / 14) * 100)}%`,
+                            backgroundColor: hasAtrasado ? '#ef4444' : '#22c55e',
+                          }}
+                        />
                       </div>
-                    </td>
-                    <td>
-                      {(p.semanalSinCorte ?? 0) > 0 ? (
-                        <span className="font-mono text-orange-400 text-sm font-medium">
-                          {fmt.money(p.semanalSinCorte!)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-600 text-xs">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className="font-mono text-sm text-slate-300">
-                        {fmt.money(p.saldoPendiente ?? 0)}
+                      <span className="font-mono text-slate-500 tabular-nums">{p.pagosCubiertos ?? 0}/14</span>
+                    </div>
+                    {(p.semanalSinCorte ?? 0) > 0 && (
+                      <span className="ml-auto font-mono text-orange-400 font-medium">
+                        {fmt.money(p.semanalSinCorte!)} sin corte
                       </span>
-                    </td>
-                    <td>
-                      {/* Mini corrida visual */}
-                      <div className="flex gap-1">
-                        {Array.from({ length: 14 }, (_, idx) => {
-                          const cubiertos  = p.pagosCubiertos ?? 0
-                          const atrasados  = p.pagosAtrasados ?? 0
-                          const sinCorte   = Math.round((p.semanalSinCorte ?? 0) / p.pagoSemanal)
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
 
-                          let hex = estadoConfig.PENDIENTE.hex
-                          if (idx < cubiertos - sinCorte)          hex = estadoConfig.PAGADO.hex
-                          else if (idx < cubiertos)                hex = estadoConfig.PAGADO_SIN_CORTE.hex
-                          else if (idx < cubiertos + atrasados)    hex = estadoConfig.ATRASADO.hex
-                          else if (idx === cubiertos + atrasados)  hex = estadoConfig.PROXIMO.hex
-
-                          return (
-                            <span
-                              key={idx}
-                              className="w-3 h-3 rounded-sm shrink-0"
-                              style={{ backgroundColor: hex }}
-                              title={`Pago ${idx + 1}`}
+          {/* ── DESKTOP: tabla ────────────────────────────────── */}
+          <div className="hidden md:block ec-card overflow-hidden">
+            <table className="ec-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Préstamo</th>
+                  <th>Pago sem.</th>
+                  <th>Progreso</th>
+                  <th>Sin corte</th>
+                  <th>Saldo</th>
+                  <th>Corrida de 14 pagos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p: PrestamoResumen, i) => {
+                  const hasAtrasado = (p.pagosAtrasados ?? 0) > 0
+                  return (
+                    <tr
+                      key={p.id}
+                      className="cursor-pointer animate-fade-in"
+                      style={{ animationDelay: `${i * 20}ms` }}
+                      onClick={() => navigate(`/clientes/${p.clienteId}`)}
+                    >
+                      <td>
+                        <div>
+                          <p className="font-medium text-slate-100 text-sm">{p.clienteNombre}</p>
+                          <p className="text-xs font-mono text-slate-500">{p.clienteNumero}</p>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="font-mono text-xs text-slate-400">{p.numero}</span>
+                      </td>
+                      <td>
+                        <span className="font-mono text-green-400 font-medium">{fmt.money(p.pagoSemanal)}</span>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-1.5 bg-navy-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${Math.round(((p.pagosCubiertos ?? 0) / 14) * 100)}%`,
+                                backgroundColor: hasAtrasado ? '#ef4444' : '#22c55e',
+                              }}
                             />
-                          )
-                        })}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+                          </div>
+                          <span className="text-xs text-slate-500 font-mono tabular-nums whitespace-nowrap">
+                            {p.pagosCubiertos ?? 0}/14
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        {(p.semanalSinCorte ?? 0) > 0 ? (
+                          <span className="font-mono text-orange-400 text-sm font-medium">
+                            {fmt.money(p.semanalSinCorte!)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-600 text-xs">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="font-mono text-sm text-slate-300">
+                          {fmt.money(p.saldoPendiente ?? 0)}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex gap-1">
+                          {Array.from({ length: 14 }, (_, idx) => {
+                            const cubiertos  = p.pagosCubiertos ?? 0
+                            const atrasados  = p.pagosAtrasados ?? 0
+                            const sinCorte   = Math.round((p.semanalSinCorte ?? 0) / p.pagoSemanal)
+                            let hex = estadoConfig.PENDIENTE.hex
+                            if (idx < cubiertos - sinCorte)          hex = estadoConfig.PAGADO.hex
+                            else if (idx < cubiertos)                hex = estadoConfig.PAGADO_SIN_CORTE.hex
+                            else if (idx < cubiertos + atrasados)    hex = estadoConfig.ATRASADO.hex
+                            else if (idx === cubiertos + atrasados)  hex = estadoConfig.PROXIMO.hex
+                            return (
+                              <span
+                                key={idx}
+                                className="w-3 h-3 rounded-sm shrink-0"
+                                style={{ backgroundColor: hex }}
+                                title={`Pago ${idx + 1}`}
+                              />
+                            )
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   )
 }
