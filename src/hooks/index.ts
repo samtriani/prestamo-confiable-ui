@@ -168,6 +168,8 @@ export function useRegistrarAbono(prestamoId: string) {
       qc.invalidateQueries({ queryKey: qk.totalSemanal })
       qc.invalidateQueries({ queryKey: qk.dashboard })
       qc.invalidateQueries({ queryKey: qk.prestamosActivos })
+      // Invalida todos los historiales para que pagosCubiertos y montos se actualicen
+      qc.invalidateQueries({ queryKey: ['historial'] })
       toast.success('Abono registrado')
     },
     onError: (e: Error) => toast.error(e.message),
@@ -193,6 +195,7 @@ export function useRegistrarAbonoCobranza() {
       qc.invalidateQueries({ queryKey: qk.totalSemanal })
       qc.invalidateQueries({ queryKey: qk.dashboard })
       qc.invalidateQueries({ queryKey: qk.prestamosActivos })
+      qc.invalidateQueries({ queryKey: ['historial'] })
       toast.success('Pago registrado')
     },
     onError: (e: Error) => toast.error(e.message),

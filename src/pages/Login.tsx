@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { DollarSign, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
   const { login }           = useAuth()
@@ -29,9 +29,11 @@ export default function Login() {
 
         {/* Logo */}
         <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-green-600/15 border border-green-600/30 flex items-center justify-center mx-auto mb-4">
-            <DollarSign size={28} className="text-green-400" />
-          </div>
+          <img
+            src="/favicon.jpg"
+            alt="Empeña Confiable"
+            className="w-20 h-20 rounded-2xl object-cover mx-auto mb-4 border border-white/10"
+          />
           <h1 className="font-display font-bold text-2xl text-slate-100">Empeña Confiable</h1>
           <p className="text-sm text-slate-500 mt-1">Sistema de Préstamos</p>
         </div>

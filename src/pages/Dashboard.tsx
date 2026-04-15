@@ -298,15 +298,18 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td>
-                      {/* Mini corrida placeholder - se carga en detalle */}
+                      {/* Mini corrida */}
                       <div className="flex gap-1">
                         {Array.from({ length: 14 }, (_, i) => {
-                          const covered  = p.pagosCubiertos ?? 0
-                          const atrasado = p.pagosAtrasados ?? 0
+                          const cubiertos  = p.pagosCubiertos ?? 0
+                          const sinCorte   = p.pagosSinCorte  ?? 0
+                          const pagados    = cubiertos - sinCorte   // PAGADO (verde, ya en corte)
+                          const atrasados  = p.pagosAtrasados ?? 0
                           let color = '#374151'
-                          if (i < covered)             color = '#22c55e'
-                          else if (i < covered + atrasado) color = '#ef4444'
-                          else if (i === covered + atrasado) color = '#3b82f6'
+                          if (i < pagados)                    color = '#22c55e'  // verde — ya cortado
+                          else if (i < cubiertos)             color = '#f97316'  // naranja — sin corte
+                          else if (i < cubiertos + atrasados) color = '#ef4444'  // rojo
+                          else if (i === cubiertos + atrasados) color = '#3b82f6' // azul — próximo
                           return (
                             <span
                               key={i}
