@@ -87,6 +87,7 @@ export interface DashboardData {
 export interface PrestamoResumen extends Prestamo {
   totalPagos:      number
   pagosCubiertos:  number
+  pagosSinCorte:   number
   pagosAtrasados:  number
   totalAbonado:    number
   saldoPendiente:  number
