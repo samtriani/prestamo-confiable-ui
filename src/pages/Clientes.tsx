@@ -1,24 +1,107 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, UserPlus, ChevronRight } from 'lucide-react'
-import { useClientes } from '@/hooks'
+import { Search, UserPlus, ChevronRight, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react'
+import { useClientes, usePrestamosActivos } from '@/hooks'
 import { Button } from '@/components/ui'
 import { fmt } from '@/utils/format'
-import type { Cliente } from '@/types'
+import type { Cliente, PrestamoResumen } from '@/types'
+
+type Filtro = 'TODOS' | 'ACTIVO' | 'ATRASADO' | 'LIQUIDADO'
+
+// Estado derivado por cliente
+type EstadoCliente = 'ACTIVO' | 'ATRASADO' | 'LIQUIDADO'
+
+function estadoBadge(estado: EstadoCliente) {
+  switch (estado) {
+    case 'ATRASADO':
+      return (
+        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/15 text-red-400 border border-red-500/20 shrink-0">
+          <AlertCircle size={9} />
+          Atrasado
+        </span>
+      )
+    case 'ACTIVO':
+      return (
+        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/20 shrink-0">
+          <TrendingUp size={9} />
+          Al corriente
+        </span>
+      )
+    case 'LIQUIDADO':
+      return (
+        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-600/15 text-green-400 border border-green-600/25 shrink-0">
+          <CheckCircle2 size={9} />
+          Liquidado
+        </span>
+      )
+  }
+}
 
 export default function Clientes() {
-  const navigate            = useNavigate()
-  const { data = [], isLoading } = useClientes()
-  const [query, setQuery]   = useState('')
+  const navigate = useNavigate()
+  const { data = [],      isLoading }  = useClientes()
+  const { data: activos = [] }         = usePrestamosActivos()
+  const [query, setQuery]  = useState('')
+  const [filtro, setFiltro] = useState<Filtro>('TODOS')
 
-  const filtered = data.filter((c: Cliente) =>
-    c.nombre.toLowerCase().includes(query.toLowerCase()) ||
-    c.numero.toLowerCase().includes(query.toLowerCase()) ||
-    (c.telefono ?? '').includes(query)
+  // Mapa clienteId → estado de su préstamo activo
+  const estadoMap = useMemo(() => {
+    const map = new Map<string, EstadoCliente>()
+    ;(activos as PrestamoResumen[]).forEach(p => {
+      if (!p.clienteId) return
+      const id = p.clienteId.toString()
+      const atrasado = (p.pagosAtrasados ?? 0) > 0
+      // Si ya hay una entrada atrasada, no la sobreescribir
+      if (!map.has(id) || atrasado) {
+        map.set(id, atrasado ? 'ATRASADO' : 'ACTIVO')
+      }
+    })
+    return map
+  }, [activos])
+
+  const getEstado = (c: Cliente): EstadoCliente =>
+    estadoMap.get(c.id) ?? 'LIQUIDADO'
+
+  // Aplicar búsqueda
+  const byQuery = useMemo(() =>
+    data.filter((c: Cliente) =>
+      c.nombre.toLowerCase().includes(query.toLowerCase()) ||
+      c.numero.toLowerCase().includes(query.toLowerCase()) ||
+      (c.telefono ?? '').includes(query)
+    ), [data, query])
+
+  // Aplicar filtro de estado
+  const filtered = useMemo(() =>
+    filtro === 'TODOS'
+      ? byQuery
+      : byQuery.filter((c: Cliente) => getEstado(c) === filtro),
+    [byQuery, filtro, estadoMap] // eslint-disable-line react-hooks/exhaustive-deps
   )
 
+  // Conteos para las etiquetas de los filtros
+  const counts = useMemo(() => ({
+    todos:     byQuery.length,
+    activo:    byQuery.filter((c: Cliente) => getEstado(c) === 'ACTIVO').length,
+    atrasado:  byQuery.filter((c: Cliente) => getEstado(c) === 'ATRASADO').length,
+    liquidado: byQuery.filter((c: Cliente) => getEstado(c) === 'LIQUIDADO').length,
+  }), [byQuery, estadoMap]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const FILTROS: { key: Filtro; label: string }[] = [
+    { key: 'TODOS',    label: `Todos (${counts.todos})` },
+    { key: 'ACTIVO',   label: `Al corriente (${counts.activo})` },
+    { key: 'ATRASADO', label: `Atrasados (${counts.atrasado})` },
+    { key: 'LIQUIDADO',label: `Liquidados (${counts.liquidado})` },
+  ]
+
+  const FILTRO_STYLE: Record<Filtro, string> = {
+    TODOS:     'bg-green-600/20 text-green-400 border-green-600/40',
+    ACTIVO:    'bg-blue-600/20 text-blue-400 border-blue-600/40',
+    ATRASADO:  'bg-red-600/20 text-red-400 border-red-600/40',
+    LIQUIDADO: 'bg-green-600/20 text-green-400 border-green-600/40',
+  }
+
   return (
-    <div className="space-y-5 animate-fade-up">
+    <div className="space-y-4 animate-fade-up">
 
       {/* Toolbar */}
       <div className="flex gap-3 items-center">
@@ -37,6 +120,23 @@ export default function Clientes() {
         </Button>
       </div>
 
+      {/* Filtros */}
+      <div className="flex gap-2 flex-wrap">
+        {FILTROS.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFiltro(f.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              filtro === f.key
+                ? FILTRO_STYLE[f.key]
+                : 'bg-transparent text-slate-500 border-white/5 hover:border-white/10 hover:text-slate-300'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Resultados */}
       {isLoading ? (
         <div className="ec-card p-10 text-center text-slate-500 text-sm">Cargando clientes…</div>
@@ -44,7 +144,7 @@ export default function Clientes() {
         <div className="ec-card p-10 text-center">
           <p className="text-slate-400 text-sm font-medium">Sin resultados</p>
           <p className="text-slate-600 text-xs mt-1">
-            {query ? `No se encontró "${query}"` : 'No hay clientes registrados aún'}
+            {query ? `No se encontró "${query}"` : 'No hay clientes en este filtro'}
           </p>
         </div>
       ) : (
@@ -67,6 +167,7 @@ export default function Clientes() {
                     {c.numero}{c.telefono ? ` · ${c.telefono}` : ''}
                   </p>
                 </div>
+                {estadoBadge(getEstado(c))}
                 <ChevronRight size={14} className="text-slate-600 shrink-0" />
               </div>
             ))}
@@ -79,6 +180,7 @@ export default function Clientes() {
                 <tr>
                   <th>#</th>
                   <th>Cliente</th>
+                  <th>Estado</th>
                   <th>Teléfono</th>
                   <th>Domicilio</th>
                   <th>Registrado</th>
@@ -106,6 +208,7 @@ export default function Clientes() {
                         <span className="font-medium text-slate-100">{c.nombre}</span>
                       </div>
                     </td>
+                    <td>{estadoBadge(getEstado(c))}</td>
                     <td>
                       <span className="font-mono text-xs text-slate-400">{c.telefono ?? '—'}</span>
                     </td>
@@ -132,7 +235,7 @@ export default function Clientes() {
       {filtered.length > 0 && (
         <p className="text-xs text-slate-600 text-right">
           {filtered.length} cliente{filtered.length !== 1 ? 's' : ''}
-          {query && ` · filtrado de ${data.length}`}
+          {filtro !== 'TODOS' && ` · filtro: ${FILTROS.find(f => f.key === filtro)?.label}`}
         </p>
       )}
     </div>

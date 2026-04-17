@@ -92,7 +92,7 @@ export default function ControlPagos() {
           <div className="md:hidden space-y-2">
             {filtered.map((p: PrestamoResumen, i) => {
               const hasAtrasado = (p.pagosAtrasados ?? 0) > 0
-              const sinCorte    = Math.round((p.semanalSinCorte ?? 0) / p.pagoSemanal)
+              const sinCorte    = p.pagosSinCorte ?? 0
               return (
                 <div
                   key={p.id}
@@ -232,7 +232,7 @@ export default function ControlPagos() {
                           {Array.from({ length: 14 }, (_, idx) => {
                             const cubiertos  = p.pagosCubiertos ?? 0
                             const atrasados  = p.pagosAtrasados ?? 0
-                            const sinCorte   = Math.round((p.semanalSinCorte ?? 0) / p.pagoSemanal)
+                            const sinCorte   = p.pagosSinCorte ?? 0
                             let hex = estadoConfig.PENDIENTE.hex
                             if (idx < cubiertos - sinCorte)          hex = estadoConfig.PAGADO.hex
                             else if (idx < cubiertos)                hex = estadoConfig.PAGADO_SIN_CORTE.hex
