@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, CreditCard,
-  Scissors, ChevronRight, ShieldCheck, Wallet, X,
+  Scissors, ChevronRight, ShieldCheck, X,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTotalSemanal, useCobranza } from '@/hooks'
