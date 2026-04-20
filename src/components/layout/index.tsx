@@ -12,7 +12,7 @@ import { useAuth } from '@/context/AuthContext'
 const NAV = [
   { to: '/',         icon: LayoutDashboard, label: 'Dashboard'        },
   { to: '/clientes', icon: Users,           label: 'Clientes'         },
-  { to: '/cobranza', icon: Wallet,          label: 'Cobranza'         },
+  // { to: '/cobranza', icon: Wallet,          label: 'Cobranza'         },
   { to: '/control',  icon: CreditCard,      label: 'Control pagos'    },
   { to: '/cortes',   icon: Scissors,        label: 'Historial cortes' },
 ]
