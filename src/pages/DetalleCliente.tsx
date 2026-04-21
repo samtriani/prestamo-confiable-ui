@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Phone, MapPin, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, Phone, MapPin, RefreshCw, Download } from 'lucide-react'
 import {
   useCliente, useHistorialCliente,
   usePagosPrestamo, useRegistrarAbono, useNuevoPrestamo,
@@ -9,6 +9,145 @@ import { Badge, Button, Modal, PagoGrid, Input, DateInput } from '@/components/u
 import { fmt } from '@/utils/format'
 import { estadoConfig } from '@/utils/estadoPago'
 import type { Pago, PrestamoResumen } from '@/types'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+const ESTADO_LABEL: Record<string, string> = {
+  PAGADO:          'Pagado',
+  PAGADO_SIN_CORTE:'Pagado',
+  ATRASADO:        'Atrasado',
+  PROXIMO:         'Próximo',
+  PENDIENTE:       'Pendiente',
+}
+
+const ESTADO_COLOR: Record<string, [number, number, number]> = {
+  PAGADO:          [34,  197, 94],
+  PAGADO_SIN_CORTE:[34,  197, 94],
+  ATRASADO:        [239, 68,  68],
+  PROXIMO:         [59,  130, 246],
+  PENDIENTE:       [100, 116, 139],
+}
+
+function generarPDF(prestamo: PrestamoResumen, nombreCliente: string) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = doc.internal.pageSize.getWidth()
+
+  doc.setFillColor(22, 163, 74)
+  doc.rect(0, 0, W, 28, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.text('Empeña Confiable', 14, 11)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.text('Estado de crédito', 14, 18)
+  doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')}`, 14, 23)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.text(prestamo.numero, W - 14, 15, { align: 'right' })
+
+  let y = 36
+  doc.setTextColor(30, 41, 59)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.text(nombreCliente, 14, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(100, 116, 139)
+  doc.text(`Inicio del crédito: ${fmt.date(prestamo.fechaInicio)}`, 14, y + 6)
+  doc.text(`Primer pago: ${fmt.date(prestamo.fechaPrimerPago)}`, 14, y + 11)
+
+  y += 20
+  const boxes = [
+    { label: 'Monto del crédito', value: fmt.money(prestamo.monto),              color: [30, 41, 59]   as [number,number,number] },
+    { label: 'Pago semanal',      value: fmt.money(prestamo.pagoSemanal),         color: [22, 163, 74]  as [number,number,number] },
+    { label: 'Total abonado',     value: fmt.money(prestamo.totalAbonado ?? 0),   color: [30, 41, 59]   as [number,number,number] },
+    { label: 'Saldo pendiente',   value: fmt.money(prestamo.saldoPendiente ?? 0), color: [234, 88, 12]  as [number,number,number] },
+  ]
+  const bw = (W - 28 - 9) / 4
+  boxes.forEach((b, i) => {
+    const bx = 14 + i * (bw + 3)
+    doc.setFillColor(248, 250, 252)
+    doc.roundedRect(bx, y, bw, 18, 2, 2, 'F')
+    doc.setTextColor(100, 116, 139)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.text(b.label, bx + bw / 2, y + 6, { align: 'center' })
+    doc.setTextColor(...b.color)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.text(b.value, bx + bw / 2, y + 13, { align: 'center' })
+  })
+
+  y += 25
+  const cubiertos = prestamo.pagosCubiertos ?? 0
+  const progreso  = Math.round((cubiertos / 14) * 100)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(100, 116, 139)
+  doc.text('Progreso del crédito', 14, y)
+  doc.text(`${cubiertos}/14 pagos · ${progreso}%`, W - 14, y, { align: 'right' })
+  y += 3
+  doc.setFillColor(226, 232, 240)
+  doc.roundedRect(14, y, W - 28, 4, 2, 2, 'F')
+  if (progreso > 0) {
+    doc.setFillColor(34, 197, 94)
+    doc.roundedRect(14, y, ((W - 28) * progreso) / 100, 4, 2, 2, 'F')
+  }
+
+  y += 12
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(30, 41, 59)
+  doc.text('CORRIDA DE 14 PAGOS', 14, y)
+
+  const atras = prestamo.pagosAtrasados ?? 0
+  const rows = Array.from({ length: 14 }, (_, n) => {
+    let estado = 'PENDIENTE'
+    if (n < cubiertos)               estado = 'PAGADO'
+    else if (n < cubiertos + atras)  estado = 'ATRASADO'
+    else if (n === cubiertos + atras) estado = 'PROXIMO'
+
+    const fechaPago = new Date(prestamo.fechaPrimerPago + 'T12:00:00')
+    fechaPago.setDate(fechaPago.getDate() + n * 7)
+    const fecha = fechaPago.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return [`#${n + 1}`, fecha, fmt.money(prestamo.pagoSemanal), ESTADO_LABEL[estado], estado]
+  })
+
+  autoTable(doc, {
+    startY: y + 4,
+    head: [['Pago', 'Fecha', 'Importe', 'Estado']],
+    body: rows.map(r => r.slice(0, 4)),
+    theme: 'grid',
+    headStyles: { fillColor: [22, 163, 74], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8, halign: 'center' },
+    bodyStyles: { fontSize: 8, textColor: [30, 41, 59] },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 16 },
+      1: { halign: 'center', cellWidth: 36 },
+      2: { halign: 'right',  cellWidth: 36 },
+      3: { halign: 'center' },
+    },
+    didParseCell(data) {
+      if (data.section === 'body' && data.column.index === 3) {
+        const estado = rows[data.row.index][4]
+        const [r, g, b] = ESTADO_COLOR[estado] ?? [100, 116, 139]
+        data.cell.styles.textColor = [r, g, b]
+        data.cell.styles.fontStyle = 'bold'
+      }
+    },
+    margin: { left: 14, right: 14 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+  })
+
+  const pageH = doc.internal.pageSize.getHeight()
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(148, 163, 184)
+  doc.text('Este documento es informativo y no constituye un comprobante fiscal.', W / 2, pageH - 8, { align: 'center' })
+  doc.text('Empeña Confiable © ' + new Date().getFullYear(), W / 2, pageH - 4, { align: 'center' })
+
+  doc.save(`estado-credito-${prestamo.numero}.pdf`)
+}
 
 export default function DetalleCliente() {
   const { id }     = useParams<{ id: string }>()
@@ -110,6 +249,7 @@ export default function DetalleCliente() {
       {prestamoActivo ? (
         <PrestamoActivo
           prestamo={prestamoActivo}
+          nombreCliente={cliente.nombre}
           onAbonarPago={abrirAbono}
         />
       ) : (
@@ -277,10 +417,11 @@ export default function DetalleCliente() {
 
 // ── Sub-componente PrestamoActivo ──────────────────────────────────
 function PrestamoActivo({
-  prestamo, onAbonarPago,
+  prestamo, nombreCliente, onAbonarPago,
 }: {
-  prestamo:     PrestamoResumen
-  onAbonarPago: (pago: Pago) => void
+  prestamo:      PrestamoResumen
+  nombreCliente: string
+  onAbonarPago:  (pago: Pago) => void
 }) {
   const { data: pagos = [], isLoading } = usePagosPrestamo(prestamo.id)
   const progreso = Math.round(((prestamo.pagosCubiertos ?? 0) / 14) * 100)
@@ -295,6 +436,13 @@ function PrestamoActivo({
           <span className="font-display font-bold text-xl text-slate-100">
             {fmt.money(prestamo.monto)}
           </span>
+          <button
+            onClick={() => generarPDF(prestamo, nombreCliente)}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600/15 text-green-400 border border-green-600/25 hover:bg-green-600/25 transition-colors shrink-0"
+          >
+            <Download size={12} />
+            PDF
+          </button>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="p-2.5 rounded-lg bg-navy-700/50">
