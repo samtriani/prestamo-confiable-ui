@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { UserPlus, ShieldCheck, User, Power, Eye, EyeOff, CreditCard, Pencil, Search, X } from 'lucide-react'
 import { useUsuarios, useCrearUsuario, useToggleUsuario, useEditarUsuario, useClientes } from '@/hooks'
 import { Button, Modal } from '@/components/ui'
@@ -6,6 +6,10 @@ import { fmt } from '@/utils/format'
 import type { Cliente, Rol, Usuario } from '@/types'
 
 const ROL_LABELS: Record<Rol, string> = { ADMIN: 'Administrador', OPERADOR: 'Operador', CLIENTE: 'Cliente' }
+
+const ROL_ORDER: Record<Rol, number> = { ADMIN: 0, OPERADOR: 1, CLIENTE: 2 }
+
+type FiltroRol = 'TODOS' | Rol
 
 const EMPTY_CREATE = { username: '', password: '', nombre: '', rol: 'OPERADOR' as Rol, clienteId: '' }
 const EMPTY_EDIT   = { nombre: '', rol: 'OPERADOR' as Rol, clienteId: '', password: '' }
@@ -58,33 +62,67 @@ export default function Usuarios() {
     )
   }
 
-  const admins     = usuarios.filter((u: Usuario) => u.rol === 'ADMIN')
-  const operadores = usuarios.filter((u: Usuario) => u.rol === 'OPERADOR')
-  const clts       = usuarios.filter((u: Usuario) => u.rol === 'CLIENTE')
+  const [filtro, setFiltro] = useState<FiltroRol>('TODOS')
+
+  const admins     = useMemo(() => usuarios.filter((u: Usuario) => u.rol === 'ADMIN'),    [usuarios])
+  const operadores = useMemo(() => usuarios.filter((u: Usuario) => u.rol === 'OPERADOR'), [usuarios])
+  const clts       = useMemo(() => usuarios.filter((u: Usuario) => u.rol === 'CLIENTE'),  [usuarios])
+
+  // Ordenar: ADMIN → OPERADOR → CLIENTE, luego aplicar filtro
+  const sorted   = useMemo(() =>
+    [...usuarios].sort((a: Usuario, b: Usuario) => ROL_ORDER[a.rol] - ROL_ORDER[b.rol]),
+    [usuarios]
+  )
+  const filtered = useMemo(() =>
+    filtro === 'TODOS' ? sorted : sorted.filter((u: Usuario) => u.rol === filtro),
+    [sorted, filtro]
+  )
+
+  const FILTROS: { key: FiltroRol; label: string; style: string }[] = [
+    { key: 'TODOS',    label: `Todos (${usuarios.length})`,       style: 'bg-slate-600/20 text-slate-300 border-slate-500/40' },
+    { key: 'ADMIN',    label: `Admins (${admins.length})`,        style: 'bg-green-600/20 text-green-400 border-green-600/40' },
+    { key: 'OPERADOR', label: `Operadores (${operadores.length})`,style: 'bg-blue-600/20 text-blue-400 border-blue-600/40'   },
+    { key: 'CLIENTE',  label: `Clientes (${clts.length})`,        style: 'bg-purple-600/20 text-purple-400 border-purple-600/40' },
+  ]
 
   return (
-    <div className="space-y-6 animate-fade-up">
+    <div className="space-y-4 animate-fade-up">
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {admins.length} administrador{admins.length !== 1 ? 'es' : ''} ·{' '}
-            {operadores.length} operador{operadores.length !== 1 ? 'es' : ''} ·{' '}
-            {clts.length} cliente{clts.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+        <p className="text-xs text-slate-500">
+          {admins.length} administrador{admins.length !== 1 ? 'es' : ''} ·{' '}
+          {operadores.length} operador{operadores.length !== 1 ? 'es' : ''} ·{' '}
+          {clts.length} cliente{clts.length !== 1 ? 's' : ''}
+        </p>
         <Button variant="primary" size="md" onClick={() => setCreateModal(true)}>
           <UserPlus size={14} />
           Nuevo usuario
         </Button>
       </div>
 
+      {/* Filtros */}
+      <div className="flex gap-2 flex-wrap">
+        {FILTROS.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFiltro(f.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              filtro === f.key
+                ? f.style
+                : 'bg-transparent text-slate-500 border-white/5 hover:border-white/10 hover:text-slate-300'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Tabla */}
       <div className="ec-card overflow-hidden">
         {isLoading ? (
           <div className="p-10 text-center text-slate-500 text-sm">Cargando…</div>
-        ) : usuarios.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-slate-500 text-sm">No hay usuarios</div>
         ) : (
           <table className="ec-table">
@@ -99,7 +137,7 @@ export default function Usuarios() {
               </tr>
             </thead>
             <tbody>
-              {usuarios.map((u: Usuario) => (
+              {filtered.map((u: Usuario) => (
                 <tr key={u.id} className={!u.activo ? 'opacity-50' : ''}>
                   <td>
                     <div className="flex items-center gap-2">
