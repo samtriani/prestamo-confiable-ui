@@ -20,13 +20,19 @@ export default function ControlPagos() {
     (p.clienteTelefono ?? '').includes(query)
   )
 
-  const filtered = byQuery.filter((p: PrestamoResumen) => {
-    if (filtro === 'TODOS')             return true
-    if (filtro === 'ATRASADO')          return (p.pagosAtrasados ?? 0) > 0
-    if (filtro === 'PROXIMO')           return (p.pagosAtrasados ?? 0) === 0
-    if (filtro === 'PAGADO_SIN_CORTE')  return (p.semanalSinCorte ?? 0) > 0
-    return true
-  })
+  const filtered = byQuery
+    .filter((p: PrestamoResumen) => {
+      if (filtro === 'TODOS')             return true
+      if (filtro === 'ATRASADO')          return (p.pagosAtrasados ?? 0) > 0
+      if (filtro === 'PROXIMO')           return (p.pagosAtrasados ?? 0) === 0
+      if (filtro === 'PAGADO_SIN_CORTE')  return (p.semanalSinCorte ?? 0) > 0
+      return true
+    })
+    .sort((a: PrestamoResumen, b: PrestamoResumen) => {
+      const numA = parseInt(a.numero?.replace(/\D/g, '') ?? '0', 10)
+      const numB = parseInt(b.numero?.replace(/\D/g, '') ?? '0', 10)
+      return numA - numB
+    })
 
   const FILTROS: { key: Filtro; label: string }[] = [
     { key: 'TODOS',           label: `Todos (${byQuery.length})` },
