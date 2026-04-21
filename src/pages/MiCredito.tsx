@@ -261,7 +261,11 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-white/5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs text-slate-500 font-mono">{prestamo.numero}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-slate-500 font-mono">{prestamo.numero}</p>
+                <span className="text-slate-600">·</span>
+                <p className="text-xs text-slate-400">{nombreCliente}</p>
+              </div>
               <p className="text-2xl sm:text-3xl font-display font-bold text-slate-100 mt-1">
                 {fmt.money(prestamo.monto)}
               </p>
