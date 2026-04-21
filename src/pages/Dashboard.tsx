@@ -137,7 +137,12 @@ function generarPDFDashboard(
 export default function Dashboard() {
   const navigate                   = useNavigate()
   const { data: dash, isLoading }  = useDashboard()
-  const { data: activos = [] }     = usePrestamosActivos()
+  const { data: activosRaw = [] }  = usePrestamosActivos()
+  const activos = [...activosRaw].sort((a: PrestamoResumen, b: PrestamoResumen) => {
+    const numA = parseInt((a.numero ?? '').replace(/\D/g, ''), 10)
+    const numB = parseInt((b.numero ?? '').replace(/\D/g, ''), 10)
+    return numA - numB
+  })
   const { data: semanal }          = useTotalSemanal()
   const corte                      = useRealizarCorte()
   const { isAdmin }                = useAuth()
