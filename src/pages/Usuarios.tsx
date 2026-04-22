@@ -118,93 +118,154 @@ export default function Usuarios() {
         ))}
       </div>
 
-      {/* Tabla */}
-      <div className="ec-card overflow-hidden">
-        {isLoading ? (
-          <div className="p-10 text-center text-slate-500 text-sm">Cargando…</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-slate-500 text-sm">No hay usuarios</div>
-        ) : (
-          <table className="ec-table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Nombre</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Creado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u: Usuario) => (
-                <tr key={u.id} className={!u.activo ? 'opacity-50' : ''}>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      {u.rol === 'ADMIN'
-                        ? <ShieldCheck size={14} className="text-green-400 shrink-0" />
-                        : u.rol === 'CLIENTE'
-                          ? <CreditCard size={14} className="text-purple-400 shrink-0" />
-                          : <User size={14} className="text-slate-500 shrink-0" />
-                      }
-                      <span className="font-mono text-sm text-slate-200">{u.username}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="text-slate-300">{u.nombre}</span>
-                  </td>
-                  <td>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+      {/* Lista */}
+      {isLoading ? (
+        <div className="ec-card p-10 text-center text-slate-500 text-sm">Cargando…</div>
+      ) : filtered.length === 0 ? (
+        <div className="ec-card p-10 text-center text-slate-500 text-sm">No hay usuarios</div>
+      ) : (
+        <>
+          {/* ── MOBILE: cards ─────────────────────────────────── */}
+          <div className="md:hidden space-y-2">
+            {filtered.map((u: Usuario) => (
+              <div
+                key={u.id}
+                className={`ec-card p-4 flex items-center gap-3 ${!u.activo ? 'opacity-50' : ''}`}
+              >
+                {/* Icono rol */}
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                  u.rol === 'ADMIN'
+                    ? 'bg-green-600/15 border border-green-600/25'
+                    : u.rol === 'CLIENTE'
+                      ? 'bg-purple-600/15 border border-purple-600/25'
+                      : 'bg-navy-700 border border-white/10'
+                }`}>
+                  {u.rol === 'ADMIN'
+                    ? <ShieldCheck size={14} className="text-green-400" />
+                    : u.rol === 'CLIENTE'
+                      ? <CreditCard size={14} className="text-purple-400" />
+                      : <User size={14} className="text-slate-400" />
+                  }
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm text-slate-200 truncate">{u.username}</span>
+                    <span className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
                       u.rol === 'ADMIN'
-                        ? 'bg-green-600/20 text-green-400 border border-green-600/30'
+                        ? 'bg-green-600/20 text-green-400'
                         : u.rol === 'CLIENTE'
-                          ? 'bg-purple-600/20 text-purple-400 border border-purple-600/30'
-                          : 'bg-navy-700 text-slate-400 border border-white/10'
+                          ? 'bg-purple-600/20 text-purple-400'
+                          : 'bg-navy-700 text-slate-400'
                     }`}>
                       {ROL_LABELS[u.rol]}
                     </span>
-                  </td>
-                  <td>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${
+                  </div>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">{u.nombre}</p>
+                </div>
+
+                {/* Estado + acciones */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className={`w-1.5 h-1.5 rounded-full mr-1 ${u.activo ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <button
+                    onClick={() => openEdit(u)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => toggle.mutate(u.id)}
+                    className={`p-1.5 rounded-lg transition-colors ${
                       u.activo
-                        ? 'bg-green-600/10 text-green-400'
-                        : 'bg-red-500/10 text-red-400'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${u.activo ? 'bg-green-400' : 'bg-red-400'}`} />
-                      {u.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="text-xs text-slate-500">{fmt.date(u.createdAt)}</span>
-                  </td>
-                  <td>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => openEdit(u)}
-                        title="Editar usuario"
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => toggle.mutate(u.id)}
-                        title={u.activo ? 'Desactivar' : 'Activar'}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          u.activo
-                            ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10'
-                            : 'text-slate-600 hover:text-green-400 hover:bg-green-500/10'
-                        }`}
-                      >
-                        <Power size={14} />
-                      </button>
-                    </div>
-                  </td>
+                        ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10'
+                        : 'text-slate-600 hover:text-green-400 hover:bg-green-500/10'
+                    }`}
+                  >
+                    <Power size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── DESKTOP: tabla ────────────────────────────────── */}
+          <div className="hidden md:block ec-card overflow-hidden">
+            <table className="ec-table">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Nombre</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Creado</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {filtered.map((u: Usuario) => (
+                  <tr key={u.id} className={!u.activo ? 'opacity-50' : ''}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        {u.rol === 'ADMIN'
+                          ? <ShieldCheck size={14} className="text-green-400 shrink-0" />
+                          : u.rol === 'CLIENTE'
+                            ? <CreditCard size={14} className="text-purple-400 shrink-0" />
+                            : <User size={14} className="text-slate-500 shrink-0" />
+                        }
+                        <span className="font-mono text-sm text-slate-200">{u.username}</span>
+                      </div>
+                    </td>
+                    <td><span className="text-slate-300">{u.nombre}</span></td>
+                    <td>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        u.rol === 'ADMIN'
+                          ? 'bg-green-600/20 text-green-400 border border-green-600/30'
+                          : u.rol === 'CLIENTE'
+                            ? 'bg-purple-600/20 text-purple-400 border border-purple-600/30'
+                            : 'bg-navy-700 text-slate-400 border border-white/10'
+                      }`}>
+                        {ROL_LABELS[u.rol]}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${
+                        u.activo ? 'bg-green-600/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.activo ? 'bg-green-400' : 'bg-red-400'}`} />
+                        {u.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td><span className="text-xs text-slate-500">{fmt.date(u.createdAt)}</span></td>
+                    <td>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openEdit(u)}
+                          title="Editar usuario"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => toggle.mutate(u.id)}
+                          title={u.activo ? 'Desactivar' : 'Activar'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            u.activo
+                              ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10'
+                              : 'text-slate-600 hover:text-green-400 hover:bg-green-500/10'
+                          }`}
+                        >
+                          <Power size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {/* Modal crear */}
       <Modal
