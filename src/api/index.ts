@@ -1,5 +1,5 @@
 import client from './client'
-import type { Cliente, ClienteRequest, PrestamoResumen, Pago, EstadoPago, Abono, AbonoRequest, Corte, CorteRequest, DashboardData } from '@/types'
+import type { Cliente, ClienteRequest, UpdateClienteRequest, PrestamoResumen, Pago, EstadoPago, Abono, AbonoRequest, Corte, CorteRequest, DashboardData } from '@/types'
 
 export const clientesApi = {
   getAll: () =>
@@ -16,6 +16,9 @@ export const clientesApi = {
 
   alta: (data: ClienteRequest) =>
     client.post<Cliente>('/clientes', data).then(r => r.data),
+
+  update: (id: string, data: UpdateClienteRequest) =>
+    client.put<Cliente>(`/clientes/${id}`, data).then(r => r.data),
 
   nuevoPrestamo: (clienteId: string, data: ClienteRequest) =>
     client.post<Cliente>(`/clientes/${clienteId}/prestamos`, data).then(r => r.data),

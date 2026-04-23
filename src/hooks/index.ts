@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clientesApi, pagosApi, abonosApi, cortesApi, dashboardApi, usuariosApi, cobranzaApi } from '@/api'
-import type { ClienteRequest, AbonoRequest, CorteRequest, CreateUsuarioRequest, UpdateUsuarioRequest } from '@/types'
+import type { ClienteRequest, UpdateClienteRequest, AbonoRequest, CorteRequest, CreateUsuarioRequest, UpdateUsuarioRequest } from '@/types'
 import { toast } from '@/utils/toast'
 
 // ── Keys ──────────────────────────────────────────────────────────
@@ -105,6 +105,20 @@ export function useAltaCliente() {
       qc.invalidateQueries({ queryKey: qk.prestamosActivos })
       qc.invalidateQueries({ queryKey: qk.dashboard })
       toast.success('Cliente registrado exitosamente')
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+}
+
+export function useEditarCliente(clienteId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: UpdateClienteRequest) => clientesApi.update(clienteId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.cliente(clienteId) })
+      qc.invalidateQueries({ queryKey: qk.clientes })
+      qc.invalidateQueries({ queryKey: qk.prestamosActivos })
+      toast.success('Cliente actualizado')
     },
     onError: (e: Error) => toast.error(e.message),
   })
