@@ -182,7 +182,7 @@ export default function DetalleCliente() {
   // Modal editar cliente
   const [editModal, setEditModal] = useState(false)
   const [editForm, setEditForm] = useState({ telefono: '', domicilio: '' })
-  const editar = useEditarCliente(id!)
+  const editar = useEditarCliente()
 
   function abrirEditar() {
     if (!cliente) return
@@ -194,8 +194,9 @@ export default function DetalleCliente() {
   }
 
   function confirmarEditar() {
+    if (!cliente) return
     editar.mutate(
-      { telefono: editForm.telefono, domicilio: editForm.domicilio },
+      { id: cliente.id, data: { telefono: editForm.telefono, domicilio: editForm.domicilio } },
       { onSuccess: () => setEditModal(false) }
     )
   }
