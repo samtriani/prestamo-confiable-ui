@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, UserPlus, ChevronRight, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react'
-import { useClientes, usePrestamosActivos } from '@/hooks'
-import { Button } from '@/components/ui'
+import { Search, UserPlus, ChevronRight, CheckCircle2, AlertCircle, TrendingUp, Pencil } from 'lucide-react'
+import { useClientes, usePrestamosActivos, useEditarCliente } from '@/hooks'
+import { Button, Modal, Input } from '@/components/ui'
 import { fmt } from '@/utils/format'
 import type { Cliente, PrestamoResumen } from '@/types'
 
@@ -43,6 +43,27 @@ export default function Clientes() {
   const { data: activos = [] }         = usePrestamosActivos()
   const [query, setQuery]  = useState('')
   const [filtro, setFiltro] = useState<Filtro>('TODOS')
+
+  // Modal editar cliente
+  const [editModal, setEditModal]       = useState(false)
+  const [editTarget, setEditTarget]     = useState<Cliente | null>(null)
+  const [editForm, setEditForm]         = useState({ telefono: '', domicilio: '' })
+  const editar = useEditarCliente()
+
+  function openEdit(e: React.MouseEvent, c: Cliente) {
+    e.stopPropagation()
+    setEditTarget(c)
+    setEditForm({ telefono: c.telefono ?? '', domicilio: c.domicilio ?? '' })
+    setEditModal(true)
+  }
+
+  function handleEdit() {
+    if (!editTarget) return
+    editar.mutate(
+      { id: editTarget.id, data: { telefono: editForm.telefono, domicilio: editForm.domicilio } },
+      { onSuccess: () => { setEditModal(false); setEditTarget(null) } }
+    )
+  }
 
   // Mapa clienteId → estado de su préstamo activo
   const estadoMap = useMemo(() => {
@@ -168,6 +189,12 @@ export default function Clientes() {
                   </p>
                 </div>
                 {estadoBadge(getEstado(c))}
+                <button
+                  onClick={e => openEdit(e, c)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors shrink-0"
+                >
+                  <Pencil size={14} />
+                </button>
                 <ChevronRight size={14} className="text-slate-600 shrink-0" />
               </div>
             ))}
@@ -221,7 +248,16 @@ export default function Clientes() {
                       <span className="text-xs text-slate-500">{fmt.date(c.createdAt)}</span>
                     </td>
                     <td>
-                      <ChevronRight size={14} className="text-slate-600" />
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={e => openEdit(e, c)}
+                          title="Editar datos de contacto"
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <ChevronRight size={14} className="text-slate-600 ml-1" />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -230,6 +266,43 @@ export default function Clientes() {
           </div>
         </>
       )}
+
+      {/* Modal editar cliente */}
+      <Modal
+        open={editModal}
+        onClose={() => { setEditModal(false); setEditTarget(null) }}
+        title={`Editar · ${editTarget?.nombre ?? ''}`}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Teléfono"
+            type="tel"
+            placeholder="10 dígitos"
+            value={editForm.telefono}
+            onChange={e => setEditForm(f => ({ ...f, telefono: e.target.value }))}
+          />
+          <Input
+            label="Domicilio"
+            placeholder="Calle, número, colonia..."
+            value={editForm.domicilio}
+            onChange={e => setEditForm(f => ({ ...f, domicilio: e.target.value }))}
+          />
+          <div className="flex gap-2 pt-1">
+            <Button variant="ghost" className="flex-1" onClick={() => { setEditModal(false); setEditTarget(null) }}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              loading={editar.isPending}
+              onClick={handleEdit}
+            >
+              Guardar cambios
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Footer count */}
       {filtered.length > 0 && (

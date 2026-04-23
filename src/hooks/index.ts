@@ -110,12 +110,13 @@ export function useAltaCliente() {
   })
 }
 
-export function useEditarCliente(clienteId: string) {
+export function useEditarCliente() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: UpdateClienteRequest) => clientesApi.update(clienteId, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.cliente(clienteId) })
+    mutationFn: ({ id, data }: { id: string; data: UpdateClienteRequest }) =>
+      clientesApi.update(id, data),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: qk.cliente(id) })
       qc.invalidateQueries({ queryKey: qk.clientes })
       qc.invalidateQueries({ queryKey: qk.prestamosActivos })
       toast.success('Cliente actualizado')
