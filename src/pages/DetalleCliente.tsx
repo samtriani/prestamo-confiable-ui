@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Phone, MapPin, RefreshCw, Download } from 'lucide-react'
+import { ArrowLeft, Plus, Phone, MapPin, RefreshCw, Download, Pencil } from 'lucide-react'
 import {
   useCliente, useHistorialCliente,
-  usePagosPrestamo, useRegistrarAbono, useNuevoPrestamo,
+  usePagosPrestamo, useRegistrarAbono, useNuevoPrestamo, useEditarCliente,
 } from '@/hooks'
 import { Badge, Button, Modal, PagoGrid, Input, DateInput } from '@/components/ui'
 import { fmt } from '@/utils/format'
@@ -179,6 +179,26 @@ export default function DetalleCliente() {
     )
   }
 
+  // Modal editar cliente
+  const [editModal, setEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({ telefono: '', domicilio: '' })
+  const editar = useEditarCliente(id!)
+
+  function abrirEditar() {
+    setEditForm({
+      telefono:  cliente.telefono  ?? '',
+      domicilio: cliente.domicilio ?? '',
+    })
+    setEditModal(true)
+  }
+
+  function confirmarEditar() {
+    editar.mutate(
+      { telefono: editForm.telefono, domicilio: editForm.domicilio },
+      { onSuccess: () => setEditModal(false) }
+    )
+  }
+
   // Modal nuevo préstamo
   const [nuevoModal, setNuevoModal] = useState(false)
   const [nuevoForm, setNuevoForm] = useState({
@@ -223,8 +243,17 @@ export default function DetalleCliente() {
                 {fmt.initials(cliente.nombre)}
               </span>
             </div>
-            <div className="min-w-0">
-              <h1 className="font-display font-bold text-lg leading-none truncate">{cliente.nombre}</h1>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h1 className="font-display font-bold text-lg leading-none truncate">{cliente.nombre}</h1>
+                <button
+                  onClick={abrirEditar}
+                  className="p-1 rounded-lg hover:bg-navy-700 text-slate-500 hover:text-slate-300 transition-colors shrink-0"
+                  title="Editar datos de contacto"
+                >
+                  <Pencil size={13} />
+                </button>
+              </div>
               <p className="text-xs text-slate-500 font-mono mt-0.5">{cliente.numero}</p>
             </div>
           </div>
@@ -364,6 +393,38 @@ export default function DetalleCliente() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Modal editar cliente */}
+      <Modal open={editModal} onClose={() => setEditModal(false)} title="Editar datos de contacto" size="sm">
+        <div className="space-y-4">
+          <Input
+            label="Teléfono"
+            type="tel"
+            placeholder="10 dígitos"
+            value={editForm.telefono}
+            onChange={e => setEditForm(f => ({ ...f, telefono: e.target.value }))}
+          />
+          <Input
+            label="Domicilio"
+            placeholder="Calle, número, colonia..."
+            value={editForm.domicilio}
+            onChange={e => setEditForm(f => ({ ...f, domicilio: e.target.value }))}
+          />
+          <div className="flex gap-2 pt-1">
+            <Button variant="ghost" className="flex-1" onClick={() => setEditModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              loading={editar.isPending}
+              onClick={confirmarEditar}
+            >
+              Guardar cambios
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Modal nuevo préstamo */}

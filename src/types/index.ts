@@ -174,6 +174,11 @@ export interface ClienteRequest {
   fechaPrimerPago: string
 }
 
+export interface UpdateClienteRequest {
+  telefono?:  string
+  domicilio?: string
+}
+
 export interface AbonoRequest {
   pagoId:      string
   montoAbono:  number
