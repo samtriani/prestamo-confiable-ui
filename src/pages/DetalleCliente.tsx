@@ -185,6 +185,7 @@ export default function DetalleCliente() {
   const editar = useEditarCliente(id!)
 
   function abrirEditar() {
+    if (!cliente) return
     setEditForm({
       telefono:  cliente.telefono  ?? '',
       domicilio: cliente.domicilio ?? '',
