@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { clientesApi, pagosApi, abonosApi, cortesApi, dashboardApi, usuariosApi, cobranzaApi } from '@/api'
+import { clientesApi, pagosApi, abonosApi, cortesApi, dashboardApi, usuariosApi, cobranzaApi, reportesApi } from '@/api'
 import type { ClienteRequest, UpdateClienteRequest, AbonoRequest, CorteRequest, CreateUsuarioRequest, UpdateUsuarioRequest } from '@/types'
 import { toast } from '@/utils/toast'
 
@@ -214,6 +214,15 @@ export function useRegistrarAbonoCobranza() {
       toast.success('Pago registrado')
     },
     onError: (e: Error) => toast.error(e.message),
+  })
+}
+
+// ── Reportes ───────────────────────────────────────────────────────
+export function useReporte() {
+  return useQuery({
+    queryKey: ['reporte'],
+    queryFn:  reportesApi.get,
+    staleTime: 5 * 60_000,
   })
 }
 

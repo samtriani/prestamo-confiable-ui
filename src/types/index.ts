@@ -179,6 +179,36 @@ export interface UpdateClienteRequest {
   domicilio?: string
 }
 
+// ── Reportes ──────────────────────────────────────────────────────
+export interface MesDato {
+  mes:      string   // "2024-01"
+  monto:    number
+  cantidad: number
+}
+
+export interface TopDeudor {
+  clienteNumero:  string
+  clienteNombre:  string
+  saldoPendiente: number
+  totalAbonado:   number
+  pagosAtrasados: number
+}
+
+export interface ReporteData {
+  totalPrestado:        number
+  totalRecuperado:      number
+  gananciaNeta:         number
+  pendienteSiLiquidan:  number
+  proyeccionGanancia:   number
+  prestamosActivos:     number
+  prestamosAtrasados:   number
+  prestamosAlCorriente: number
+  totalClientes:        number
+  prestamosPorMes:      MesDato[]
+  abonosPorMes:         MesDato[]
+  topSaldos:            TopDeudor[]
+}
+
 export interface AbonoRequest {
   pagoId:      string
   montoAbono:  number
