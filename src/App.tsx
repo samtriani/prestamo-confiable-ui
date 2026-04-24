@@ -13,6 +13,7 @@ import Cortes        from '@/pages/Cortes'
 import Usuarios        from '@/pages/Usuarios'
 import MiCredito       from '@/pages/MiCredito'
 import CobranzaSemanal from '@/pages/CobranzaSemanal'
+import Reportes        from '@/pages/Reportes'
 
 const qc = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,7 @@ function ProtectedApp() {
         <Route path="/cortes"        element={<Cortes />}         />
         <Route path="/cobranza"      element={<CobranzaSemanal />} />
         <Route path="/usuarios"      element={<Usuarios />}       />
+        <Route path="/reportes"      element={<Reportes />}       />
         <Route path="*"              element={<Navigate to="/" />} />
       </Routes>
     </AppLayout>

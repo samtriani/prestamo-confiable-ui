@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, CreditCard,
-  Scissors, ChevronRight, ShieldCheck, X,
+  Scissors, ChevronRight, ShieldCheck, X, BarChart2,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useTotalSemanal, useCobranza } from '@/hooks'
@@ -18,7 +18,8 @@ const NAV = [
 ]
 
 const NAV_ADMIN = [
-  { to: '/usuarios', icon: ShieldCheck, label: 'Usuarios' },
+  { to: '/usuarios', icon: ShieldCheck, label: 'Usuarios'  },
+  { to: '/reportes', icon: BarChart2,   label: 'Reportes'  },
 ]
 
 interface SidebarProps {

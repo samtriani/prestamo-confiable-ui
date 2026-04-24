@@ -79,6 +79,11 @@ export const dashboardApi = {
     client.get<DashboardData>('/dashboard').then(r => r.data),
 }
 
+export const reportesApi = {
+  get: () =>
+    client.get<import('@/types').ReporteData>('/reportes').then(r => r.data),
+}
+
 export const cobranzaApi = {
   getSemana: () =>
     client.get<import('@/types').CobranzaItem[]>('/cobranza/semana').then(r => r.data),
