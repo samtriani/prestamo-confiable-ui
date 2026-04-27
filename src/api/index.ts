@@ -58,6 +58,9 @@ export const cortesApi = {
 
   getById: (id: string) =>
     client.get<Corte>(`/cortes/${id}`).then(r => r.data),
+
+  getAbonos: (id: string) =>
+    client.get<import('@/types').CorteAbonoItem[]>(`/cortes/${id}/abonos`).then(r => r.data),
 }
 
 export const usuariosApi = {
