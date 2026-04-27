@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import type { AuthUser, LoginRequest } from '@/types'
 import { authApi } from '@/api/auth'
@@ -20,17 +20,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       const stored = localStorage.getItem(USER_KEY)
+      const token  = localStorage.getItem(TOKEN_KEY)
+      // Set header synchronously so React Query can use it before any effects run
+      if (token) {
+        client.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      }
       return stored ? JSON.parse(stored) : null
     } catch { return null }
   })
-
-  // Inyectar token en cada petición axios
-  useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY)
-    if (token) {
-      client.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    }
-  }, [])
 
   const login = useCallback(async (data: LoginRequest) => {
     const res = await authApi.login(data)
