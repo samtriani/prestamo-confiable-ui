@@ -219,3 +219,14 @@ export interface CorteRequest {
   fechaCorte?:  string
   descripcion?: string
 }
+
+export interface CorteAbonoItem {
+  clienteNumero:  string
+  clienteNombre:  string
+  clienteTelefono: string | null
+  prestamoNumero: string
+  prestaMonto:    number
+  numeroPago:     number
+  montoAbono:     number
+  fechaAbono:     string
+}
