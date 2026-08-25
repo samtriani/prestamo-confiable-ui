@@ -4,8 +4,9 @@ import { ArrowLeft, Plus, Phone, MapPin, RefreshCw, Download, Pencil } from 'luc
 import {
   useCliente, useHistorialCliente,
   usePagosPrestamo, useRegistrarAbono, useNuevoPrestamo, useEditarCliente,
+  useAbonosPago,
 } from '@/hooks'
-import { Badge, Button, Modal, PagoGrid, Input, DateInput } from '@/components/ui'
+import { Badge, Button, Modal, PagoGrid, Input, DateInput, DesgloseAbonos } from '@/components/ui'
 import { fmt } from '@/utils/format'
 import { estadoConfig } from '@/utils/estadoPago'
 import type { Pago, PrestamoResumen } from '@/types'
@@ -345,55 +346,14 @@ export default function DetalleCliente() {
         size="sm"
       >
         {pagoSeleccionado && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="p-3 rounded-lg bg-navy-700/50">
-                <p className="text-xs text-slate-500">Monto programado</p>
-                <p className="font-mono font-medium text-slate-200 mt-0.5">
-                  {fmt.money(pagoSeleccionado.montoProgramado)}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-navy-700/50">
-                <p className="text-xs text-slate-500">Saldo pendiente</p>
-                <p className="font-mono font-medium text-orange-400 mt-0.5">
-                  {fmt.money(pagoSeleccionado.saldoPendiente ?? pagoSeleccionado.montoProgramado)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                Monto a abonar ($)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max={pagoSeleccionado.saldoPendiente ?? pagoSeleccionado.montoProgramado}
-                step="1"
-                className="ec-input font-mono text-lg"
-                value={montoAbono}
-                onChange={e => setMontoAbono(e.target.value)}
-              />
-              <p className="text-xs text-slate-500">
-                Puedes abonar un monto parcial — el pago quedará en naranja hasta completarse
-              </p>
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <Button variant="ghost" className="flex-1" onClick={() => setAbonoModal(false)}>
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1"
-                loading={registrar.isPending}
-                disabled={!montoAbono || Number(montoAbono) <= 0}
-                onClick={confirmarAbono}
-              >
-                Confirmar abono
-              </Button>
-            </div>
-          </div>
+          <FormAbono
+            pago={pagoSeleccionado}
+            monto={montoAbono}
+            onMontoChange={setMontoAbono}
+            isPending={registrar.isPending}
+            onCancelar={() => setAbonoModal(false)}
+            onConfirmar={confirmarAbono}
+          />
         )}
       </Modal>
 
@@ -567,6 +527,8 @@ function PrestamoActivo({
               {pagos.map((pago: Pago) => {
                 const cfg = estadoConfig[pago.estado]
                 const isPagable = ['PROXIMO', 'ATRASADO', 'PENDIENTE'].includes(pago.estado)
+                // Abonado a medias: hay dinero puesto pero todavía falta.
+                const parcial = (pago.totalAbonado ?? 0) > 0 && (pago.saldoPendiente ?? 0) > 0
                 return (
                   <button
                     key={pago.id}
@@ -594,17 +556,116 @@ function PrestamoActivo({
                     <p className="text-[10px] font-mono mt-0.5" style={{ color: cfg.hex }}>
                       {fmt.money(pago.montoProgramado)}
                     </p>
-                    {pago.totalAbonado != null && pago.totalAbonado > 0 && (
-                      <p className="text-[9px] text-slate-600 mt-0.5">
-                        abo: {fmt.money(pago.totalAbonado)}
+                    {/* Un pago a medias se marca en naranja legible con el
+                        avance real, para identificarlo sin abrir el modal. */}
+                    {parcial ? (
+                      <p className="text-[10px] font-mono font-medium text-orange-400 mt-0.5">
+                        {fmt.money(pago.totalAbonado ?? 0)}/{fmt.money(pago.montoProgramado)}
                       </p>
-                    )}
+                    ) : (pago.numAbonos ?? 0) > 1 ? (
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        {pago.numAbonos} abonos
+                      </p>
+                    ) : null}
                   </button>
                 )
               })}
             </div>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ── Formulario de abono con historial ──────────────────────────────
+// Va en su propio componente porque necesita consultar los abonos del pago
+// seleccionado, y un hook no puede vivir dentro del render condicional del modal.
+function FormAbono({
+  pago, monto, onMontoChange, isPending, onCancelar, onConfirmar,
+}: {
+  pago:          Pago
+  monto:         string
+  onMontoChange: (v: string) => void
+  isPending:     boolean
+  onCancelar:    () => void
+  onConfirmar:   () => void
+}) {
+  const { data: abonos = [], isLoading } = useAbonosPago(pago.id)
+
+  const saldo    = pago.saldoPendiente ?? pago.montoProgramado
+  const abonado  = pago.totalAbonado ?? 0
+  const montoNum = Number(monto)
+  const excede   = montoNum > saldo
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="p-3 rounded-lg bg-navy-700/50">
+          <p className="text-xs text-slate-500">Monto programado</p>
+          <p className="font-mono font-medium text-slate-200 mt-0.5">
+            {fmt.money(pago.montoProgramado)}
+          </p>
+        </div>
+        <div className="p-3 rounded-lg bg-navy-700/50">
+          <p className="text-xs text-slate-500">Saldo pendiente</p>
+          <p className="font-mono font-medium text-orange-400 mt-0.5">
+            {fmt.money(saldo)}
+          </p>
+          {abonado > 0 && (
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              ya abonó {fmt.money(abonado)}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Historial de abonos del pago */}
+      <DesgloseAbonos
+        abonos={abonos}
+        montoProgramado={pago.montoProgramado}
+        isLoading={isLoading}
+        ocultarSiVacio
+      />
+
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+          Monto a abonar ($)
+        </label>
+        <input
+          type="number"
+          min="1"
+          max={saldo}
+          step="1"
+          className="ec-input font-mono text-lg"
+          value={monto}
+          onChange={e => onMontoChange(e.target.value)}
+          onFocus={e => e.target.select()}
+        />
+        {excede ? (
+          <p className="text-xs text-red-400">
+            El abono excede el saldo pendiente de {fmt.money(saldo)}
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500">
+            Puedes abonar un monto parcial — el pago quedará en naranja hasta completarse
+          </p>
+        )}
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <Button variant="ghost" className="flex-1" onClick={onCancelar}>
+          Cancelar
+        </Button>
+        <Button
+          variant="primary"
+          className="flex-1"
+          loading={isPending}
+          disabled={!monto || montoNum <= 0 || excede}
+          onClick={onConfirmar}
+        >
+          Confirmar abono
+        </Button>
       </div>
     </div>
   )

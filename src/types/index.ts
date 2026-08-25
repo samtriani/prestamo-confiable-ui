@@ -43,20 +43,27 @@ export interface Pago {
   estado:           EstadoPago
   createdAt:        string
   updatedAt:        string
-  // enriquecido desde v_pagos_detalle
+  // calculado en el backend (PagoService) a partir de los abonos del pago
   totalAbonado?:    number
   saldoPendiente?:  number
   numAbonos?:       number
+  /** El pago se cubrió en varias exhibiciones o sigue incompleto. */
+  tieneAbonoParcial?:   boolean
   tienePendienteCorte?: boolean
+  /** Desglose abono por abono. Solo lo manda /auth/mi-credito/pagos. */
+  abonos?:          Abono[]
 }
 
 export interface Abono {
   id:          string
   pagoId:      string
-  corteId:     string | null
+  // La API omite los nulos (default-property-inclusion: non_null), así que
+  // un abono sin corte llega sin la propiedad, no con null.
+  corteId?:    string
   montoAbono:  number
   fechaAbono:  string
   createdAt:   string
+  /** false = pendiente de corte (naranja). */
   enCorte:     boolean
 }
 
@@ -156,6 +163,10 @@ export interface CobranzaItem {
   montoProgramado: number
   estado:          'PROXIMO' | 'ATRASADO'
   diasVencido:     number
+  // abonos parciales ya registrados sobre este pago
+  totalAbonado:    number
+  saldoPendiente:  number
+  numAbonos:       number
   prestamoId:      string
   prestamoNumero:  string
   clienteId:       string

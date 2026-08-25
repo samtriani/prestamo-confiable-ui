@@ -327,3 +327,6 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
     document.body
   )
 }
+
+// ── Desglose de abonos ────────────────────────────────────────────
+export { DesgloseAbonos } from './DesgloseAbonos'
