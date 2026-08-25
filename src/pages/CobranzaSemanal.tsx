@@ -4,8 +4,9 @@ import {
   AlertCircle, CheckCircle2, Clock, Phone,
   Search, Banknote, X,
 } from 'lucide-react'
-import { useCobranza, useRegistrarAbonoCobranza } from '@/hooks'
+import { useCobranza, useRegistrarAbonoCobranza, useAbonosPago } from '@/hooks'
 import { fmt } from '@/utils/format'
+import { DesgloseAbonos } from '@/components/ui'
 import type { CobranzaItem } from '@/types'
 
 export default function CobranzaSemanal() {
@@ -27,7 +28,8 @@ export default function CobranzaSemanal() {
   const atrasados = filtrados.filter(i => i.estado === 'ATRASADO')
   const proximos  = filtrados.filter(i => i.estado === 'PROXIMO')
 
-  const totalPorCobrar = items.reduce((s, i) => s + i.montoProgramado, 0)
+  // El pendiente real descuenta los abonos parciales ya registrados.
+  const totalPorCobrar = items.reduce((s, i) => s + i.saldoPendiente, 0)
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -58,7 +60,7 @@ export default function CobranzaSemanal() {
         <StatCard
           label="Por cobrar hoy"
           value={String(proximos.length)}
-          sub={`${fmt.money(proximos.reduce((s, i) => s + i.montoProgramado, 0))}`}
+          sub={`${fmt.money(proximos.reduce((s, i) => s + i.saldoPendiente, 0))}`}
           color="text-blue-400"
           icon={<Clock size={16} className="text-blue-400" />}
         />
@@ -203,11 +205,18 @@ function ItemRow({
         )}
       </div>
 
-      {/* Monto */}
+      {/* Monto — se cobra el saldo, no el importe programado */}
       <div className="text-right shrink-0">
-        <p className="text-sm font-mono font-bold text-slate-200">
-          {fmt.money(item.montoProgramado)}
+        <p className={`text-sm font-mono font-bold ${
+          item.totalAbonado > 0 ? 'text-orange-400' : 'text-slate-200'
+        }`}>
+          {fmt.money(item.saldoPendiente)}
         </p>
+        {item.totalAbonado > 0 && (
+          <p className="text-[10px] text-slate-500">
+            abonó {fmt.money(item.totalAbonado)} de {fmt.money(item.montoProgramado)}
+          </p>
+        )}
         {item.diasVencido > 0 && (
           <p className={`text-[10px] font-medium sm:hidden ${accentColor}`}>
             {item.diasVencido}d
@@ -230,11 +239,17 @@ function ItemRow({
 // ── Modal de pago ──────────────────────────────────────────────────
 function ModalPago({ item, onClose }: { item: CobranzaItem; onClose: () => void }) {
   const registrar = useRegistrarAbonoCobranza()
-  const [monto, setMonto] = useState(String(item.montoProgramado))
+  // Precargar el saldo y no el importe programado: si el cliente ya abonó
+  // parcialmente, cobrar el importe completo excede el saldo y la API lo rechaza.
+  const [monto, setMonto] = useState(String(item.saldoPendiente))
+  const { data: abonos = [], isLoading: cargandoAbonos } = useAbonosPago(item.pagoId)
+
+  const montoNum = parseFloat(monto)
+  const excede   = montoNum > item.saldoPendiente
 
   function handleSubmit() {
     const m = parseFloat(monto)
-    if (!m || m <= 0) return
+    if (!m || m <= 0 || m > item.saldoPendiente) return
     registrar.mutate(
       { pagoId: item.pagoId, montoAbono: m },
       { onSuccess: onClose }
@@ -271,10 +286,29 @@ function ModalPago({ item, onClose }: { item: CobranzaItem; onClose: () => void 
               <p className="text-sm font-medium text-slate-300 mt-0.5">{fmt.date(item.fechaProgramada)}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-500">Importe</p>
-              <p className="text-sm font-mono font-bold text-slate-200 mt-0.5">{fmt.money(item.montoProgramado)}</p>
+              <p className="text-xs text-slate-500">
+                {item.totalAbonado > 0 ? 'Saldo pendiente' : 'Importe'}
+              </p>
+              <p className={`text-sm font-mono font-bold mt-0.5 ${
+                item.totalAbonado > 0 ? 'text-orange-400' : 'text-slate-200'
+              }`}>
+                {fmt.money(item.saldoPendiente)}
+              </p>
+              {item.totalAbonado > 0 && (
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  de {fmt.money(item.montoProgramado)}
+                </p>
+              )}
             </div>
           </div>
+
+          {/* Abonos parciales ya registrados sobre este pago */}
+          <DesgloseAbonos
+            abonos={abonos}
+            montoProgramado={item.montoProgramado}
+            isLoading={cargandoAbonos}
+            ocultarSiVacio
+          />
 
           {/* Input monto */}
           <div className="flex flex-col gap-1.5">
@@ -286,6 +320,7 @@ function ModalPago({ item, onClose }: { item: CobranzaItem; onClose: () => void 
               <input
                 type="number"
                 min="1"
+                max={item.saldoPendiente}
                 step="0.01"
                 className="ec-input pl-7"
                 value={monto}
@@ -294,11 +329,15 @@ function ModalPago({ item, onClose }: { item: CobranzaItem; onClose: () => void 
                 autoFocus
               />
             </div>
-            {parseFloat(monto) < item.montoProgramado && parseFloat(monto) > 0 && (
-              <p className="text-[11px] text-amber-400">
-                Pago parcial — quedarán {fmt.money(item.montoProgramado - parseFloat(monto))} pendientes
+            {excede ? (
+              <p className="text-[11px] text-red-400">
+                Excede el saldo pendiente de {fmt.money(item.saldoPendiente)}
               </p>
-            )}
+            ) : montoNum > 0 && montoNum < item.saldoPendiente ? (
+              <p className="text-[11px] text-amber-400">
+                Pago parcial — quedarán {fmt.money(item.saldoPendiente - montoNum)} pendientes
+              </p>
+            ) : null}
           </div>
 
           {/* Acciones */}
@@ -311,7 +350,7 @@ function ModalPago({ item, onClose }: { item: CobranzaItem; onClose: () => void 
             </button>
             <button
               onClick={handleSubmit}
-              disabled={registrar.isPending || !parseFloat(monto) || parseFloat(monto) <= 0}
+              disabled={registrar.isPending || !montoNum || montoNum <= 0 || excede}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Banknote size={14} />

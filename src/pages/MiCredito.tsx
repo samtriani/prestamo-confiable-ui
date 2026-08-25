@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { authApi } from '@/api/auth'
 import { useAuth } from '@/context/AuthContext'
+import { useMiCreditoPagos } from '@/hooks'
+import { DesgloseAbonos } from '@/components/ui'
 import { fmt } from '@/utils/format'
 import { estadoConfig } from '@/utils/estadoPago'
-import { DollarSign, LogOut, CheckCircle2, AlertCircle, Clock, Download } from 'lucide-react'
-import type { PrestamoResumen } from '@/types'
+import { useState } from 'react'
+import { DollarSign, LogOut, CheckCircle2, AlertCircle, Clock, Download, ChevronDown } from 'lucide-react'
+import type { PrestamoResumen, Pago } from '@/types'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -338,40 +341,8 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
             })}
           </div>
 
-          {/* Grid de pagos: 4 columnas en móvil, 7 en sm+ */}
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2">
-            {Array.from({ length: 14 }, (_, n) => {
-              const cubiertos = prestamo.pagosCubiertos ?? 0
-              const atras     = prestamo.pagosAtrasados ?? 0
-
-              let estado: 'PAGADO' | 'PROXIMO' | 'ATRASADO' | 'PENDIENTE' = 'PENDIENTE'
-              if (n < cubiertos)                estado = 'PAGADO'
-              else if (n < cubiertos + atras)   estado = 'ATRASADO'
-              else if (n === cubiertos + atras)  estado = 'PROXIMO'
-
-              const fechaPago = new Date(prestamo.fechaPrimerPago + 'T12:00:00')
-              fechaPago.setDate(fechaPago.getDate() + n * 7)
-              const labelFecha = fechaPago.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: '2-digit' })
-
-              const cfg = estadoConfig[estado]
-              return (
-                <div
-                  key={n}
-                  className="rounded-xl p-1.5 sm:p-2 border text-center"
-                  style={{ backgroundColor: cfg.hex + '11', borderColor: cfg.hex + '33' }}
-                >
-                  <p className="text-[10px] font-mono font-medium" style={{ color: cfg.hex }}>
-                    #{n + 1}
-                  </p>
-                  <p className="text-[9px] text-slate-500 leading-tight mt-0.5 mb-1">{labelFecha}</p>
-                  <span
-                    className="w-2 h-2 rounded-full mx-auto block"
-                    style={{ backgroundColor: cfg.hex }}
-                  />
-                </div>
-              )
-            })}
-          </div>
+          {/* Corrida real, con el desglose de abonos de cada pago */}
+          <CorridaPagos />
         </div>
 
         {/* Footer */}
@@ -382,6 +353,106 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
           </p>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Corrida de pagos del cliente ───────────────────────────────────
+// Antes se dibujaban 14 cajitas sintetizadas a partir de los contadores
+// del préstamo, así que no había forma de mostrar los abonos reales.
+// Ahora se piden los pagos con su desglose.
+function CorridaPagos() {
+  const { data: pagos = [], isLoading } = useMiCreditoPagos()
+  const [abierto, setAbierto] = useState<string | null>(null)
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2">
+        {Array.from({ length: 14 }).map((_, i) => (
+          <div key={i} className="h-16 rounded-xl bg-navy-700 animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
+  // Si el endpoint falla, al menos se conserva la referencia del crédito.
+  if (pagos.length === 0) {
+    return (
+      <p className="text-xs text-slate-500">
+        No pudimos cargar el detalle de los pagos. Intenta recargar la página.
+      </p>
+    )
+  }
+
+  const pagoAbierto = pagos.find(p => p.id === abierto)
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 sm:gap-2">
+        {pagos.map((pago: Pago) => {
+          const cfg     = estadoConfig[pago.estado]
+          const parcial = (pago.totalAbonado ?? 0) > 0 && (pago.saldoPendiente ?? 0) > 0
+          const tieneAbonos = (pago.numAbonos ?? 0) > 0
+          const activo  = pago.id === abierto
+
+          return (
+            <button
+              key={pago.id}
+              onClick={() => setAbierto(activo ? null : pago.id)}
+              disabled={!tieneAbonos}
+              className={`rounded-xl p-1.5 sm:p-2 border text-center transition-all duration-150 ${
+                tieneAbonos ? 'cursor-pointer active:scale-95' : 'cursor-default'
+              } ${activo ? 'ring-2 ring-white/25' : ''}`}
+              style={{ backgroundColor: cfg.hex + '11', borderColor: cfg.hex + '33' }}
+            >
+              <p className="text-[10px] font-mono font-medium" style={{ color: cfg.hex }}>
+                #{pago.numeroPago}
+              </p>
+              <p className="text-[9px] text-slate-500 leading-tight mt-0.5">
+                {fmt.dateShort(pago.fechaProgramada)}
+              </p>
+
+              {/* Un pago a medias muestra el avance real en naranja */}
+              {parcial ? (
+                <p className="text-[9px] font-mono text-orange-400 leading-tight mt-0.5">
+                  {fmt.money(pago.totalAbonado ?? 0)}/{fmt.money(pago.montoProgramado)}
+                </p>
+              ) : (
+                <span
+                  className="w-2 h-2 rounded-full mx-auto block mt-1"
+                  style={{ backgroundColor: cfg.hex }}
+                />
+              )}
+
+              {tieneAbonos && (
+                <ChevronDown
+                  size={10}
+                  className={`mx-auto mt-0.5 text-slate-500 transition-transform ${
+                    activo ? 'rotate-180' : ''
+                  }`}
+                />
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Desglose del pago seleccionado */}
+      {pagoAbierto && (
+        <div className="rounded-xl border border-white/10 bg-navy-800/40 p-3 sm:p-4 animate-fade-up">
+          <p className="text-xs text-slate-400 mb-2">
+            Pago #{pagoAbierto.numeroPago} · {fmt.date(pagoAbierto.fechaProgramada)}
+          </p>
+          <DesgloseAbonos
+            abonos={pagoAbierto.abonos ?? []}
+            montoProgramado={pagoAbierto.montoProgramado}
+          />
+        </div>
+      )}
+
+      <p className="text-[11px] text-slate-600">
+        Toca un pago con abonos para ver el detalle de cada uno.
+      </p>
     </div>
   )
 }

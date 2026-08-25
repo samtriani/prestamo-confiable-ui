@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clientesApi, pagosApi, abonosApi, cortesApi, dashboardApi, usuariosApi, cobranzaApi, reportesApi } from '@/api'
+import { authApi } from '@/api/auth'
 import type { ClienteRequest, UpdateClienteRequest, AbonoRequest, CorteRequest, CreateUsuarioRequest, UpdateUsuarioRequest } from '@/types'
 import { toast } from '@/utils/toast'
 
@@ -188,6 +189,15 @@ export function useRegistrarAbono(prestamoId: string) {
       toast.success('Abono registrado')
     },
     onError: (e: Error) => toast.error(e.message),
+  })
+}
+
+// ── Mi crédito (rol CLIENTE) ───────────────────────────────────────
+export function useMiCreditoPagos() {
+  return useQuery({
+    queryKey: ['mi-credito', 'pagos'],
+    queryFn:  authApi.miCreditoPagos,
+    retry: false,
   })
 }
 
