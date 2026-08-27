@@ -16,6 +16,7 @@ import autoTable from 'jspdf-autotable'
 const ESTADO_LABEL: Record<string, string> = {
   PAGADO:          'Pagado',
   PAGADO_SIN_CORTE:'Pagado',
+  ABONO_PARCIAL:   'Abono parcial',
   ATRASADO:        'Atrasado',
   PROXIMO:         'Próximo',
   PENDIENTE:       'Pendiente',
@@ -24,6 +25,7 @@ const ESTADO_LABEL: Record<string, string> = {
 const ESTADO_COLOR: Record<string, [number, number, number]> = {
   PAGADO:          [34,  197, 94],
   PAGADO_SIN_CORTE:[34,  197, 94],
+  ABONO_PARCIAL:   [234, 179, 8],
   ATRASADO:        [239, 68,  68],
   PROXIMO:         [59,  130, 246],
   PENDIENTE:       [100, 116, 139],
@@ -102,12 +104,15 @@ function generarPDF(prestamo: PrestamoResumen, nombreCliente: string) {
   doc.setTextColor(30, 41, 59)
   doc.text('CORRIDA DE 14 PAGOS', 14, y)
 
-  const atras = prestamo.pagosAtrasados ?? 0
+  const parcial = prestamo.pagosParciales ?? 0
+  const atras   = prestamo.pagosAtrasados ?? 0
   const rows = Array.from({ length: 14 }, (_, n) => {
+    // Mismo orden de tramos que corridaHex() en utils/estadoPago.
     let estado = 'PENDIENTE'
-    if (n < cubiertos)               estado = 'PAGADO'
-    else if (n < cubiertos + atras)  estado = 'ATRASADO'
-    else if (n === cubiertos + atras) estado = 'PROXIMO'
+    if (n < cubiertos)                          estado = 'PAGADO'
+    else if (n < cubiertos + parcial)           estado = 'ABONO_PARCIAL'
+    else if (n < cubiertos + parcial + atras)   estado = 'ATRASADO'
+    else if (n === cubiertos + parcial + atras) estado = 'PROXIMO'
 
     const fechaPago = new Date(prestamo.fechaPrimerPago + 'T12:00:00')
     fechaPago.setDate(fechaPago.getDate() + n * 7)
@@ -500,7 +505,7 @@ function PrestamoActivo({
       <div className="p-5">
         {/* Leyenda */}
         <div className="flex gap-4 mb-4 flex-wrap">
-          {(['PAGADO', 'ATRASADO', 'PAGADO_SIN_CORTE', 'PROXIMO', 'PENDIENTE'] as const).map(e => {
+          {(['PAGADO', 'PAGADO_SIN_CORTE', 'ABONO_PARCIAL', 'ATRASADO', 'PROXIMO', 'PENDIENTE'] as const).map(e => {
             const cfg = estadoConfig[e]
             return (
               <div key={e} className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -526,7 +531,8 @@ function PrestamoActivo({
             <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mt-4">
               {pagos.map((pago: Pago) => {
                 const cfg = estadoConfig[pago.estado]
-                const isPagable = ['PROXIMO', 'ATRASADO', 'PENDIENTE'].includes(pago.estado)
+                // ABONO_PARCIAL tambien se puede abonar: justamente le falta dinero.
+                const isPagable = ['PROXIMO', 'ATRASADO', 'PENDIENTE', 'ABONO_PARCIAL'].includes(pago.estado)
                 // Abonado a medias: hay dinero puesto pero todavía falta.
                 const parcial = (pago.totalAbonado ?? 0) > 0 && (pago.saldoPendiente ?? 0) > 0
                 return (

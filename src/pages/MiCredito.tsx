@@ -74,6 +74,7 @@ export default function MiCredito() {
 const ESTADO_LABEL: Record<string, string> = {
   PAGADO: 'Pagado',
   PAGADO_SIN_CORTE: 'Pagado',
+  ABONO_PARCIAL: 'Abono parcial',
   ATRASADO: 'Atrasado',
   PROXIMO: 'Próximo',
   PENDIENTE: 'Pendiente',
@@ -83,6 +84,7 @@ const ESTADO_LABEL: Record<string, string> = {
 const ESTADO_COLOR: Record<string, [number, number, number]> = {
   PAGADO:          [34, 197, 94],   // green-500
   PAGADO_SIN_CORTE:[34, 197, 94],
+  ABONO_PARCIAL:   [234, 179, 8],   // yellow-500
   ATRASADO:        [239, 68,  68],  // red-500
   PROXIMO:         [59,  130, 246], // blue-500
   PENDIENTE:       [100, 116, 139], // slate-500
@@ -172,12 +174,15 @@ function generarPDF(prestamo: PrestamoResumen, nombreCliente: string) {
   doc.setTextColor(30, 41, 59)
   doc.text('CORRIDA DE 14 PAGOS', 14, y)
 
-  const atras = prestamo.pagosAtrasados ?? 0
+  const parcial = prestamo.pagosParciales ?? 0
+  const atras   = prestamo.pagosAtrasados ?? 0
   const rows = Array.from({ length: 14 }, (_, n) => {
+    // Mismo orden de tramos que corridaHex() en utils/estadoPago.
     let estado = 'PENDIENTE'
-    if (n < cubiertos)              estado = 'PAGADO'
-    else if (n < cubiertos + atras) estado = 'ATRASADO'
-    else if (n === cubiertos + atras) estado = 'PROXIMO'
+    if (n < cubiertos)                          estado = 'PAGADO'
+    else if (n < cubiertos + parcial)           estado = 'ABONO_PARCIAL'
+    else if (n < cubiertos + parcial + atras)   estado = 'ATRASADO'
+    else if (n === cubiertos + parcial + atras) estado = 'PROXIMO'
 
     const fechaPago = new Date(prestamo.fechaPrimerPago + 'T12:00:00')
     fechaPago.setDate(fechaPago.getDate() + n * 7)
@@ -330,7 +335,7 @@ function CreditoCard({ prestamo, nombreCliente }: { prestamo: PrestamoResumen; n
 
           {/* Leyenda */}
           <div className="flex flex-wrap gap-3 mb-4">
-            {(['PAGADO', 'PROXIMO', 'ATRASADO', 'PENDIENTE'] as const).map(e => {
+            {(['PAGADO', 'ABONO_PARCIAL', 'PROXIMO', 'ATRASADO', 'PENDIENTE'] as const).map(e => {
               const cfg = estadoConfig[e]
               return (
                 <div key={e} className="flex items-center gap-1.5 text-xs text-slate-500">

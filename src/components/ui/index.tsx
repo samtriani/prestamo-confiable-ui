@@ -264,7 +264,8 @@ export function PagoGrid({ pagos, size = 'md', onPagoClick }: PagoGridProps) {
     <div className="flex gap-1.5 flex-wrap">
       {pagos.map(pago => {
         const cfg = estadoConfig[pago.estado]
-        const isPagable = ['PROXIMO', 'ATRASADO', 'PENDIENTE'].includes(pago.estado)
+        // ABONO_PARCIAL tambien se puede abonar: justamente le falta dinero.
+        const isPagable = ['PROXIMO', 'ATRASADO', 'PENDIENTE', 'ABONO_PARCIAL'].includes(pago.estado)
         return (
           <button
             key={pago.id}

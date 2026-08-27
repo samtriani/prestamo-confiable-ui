@@ -2,6 +2,7 @@
 export type EstadoPago =
   | 'PENDIENTE'
   | 'PROXIMO'
+  | 'ABONO_PARCIAL'
   | 'PAGADO_SIN_CORTE'
   | 'PAGADO'
   | 'ATRASADO'
@@ -95,6 +96,8 @@ export interface PrestamoResumen extends Prestamo {
   totalPagos:      number
   pagosCubiertos:  number
   pagosSinCorte:   number
+  /** Pagos con abonos que no alcanzan el monto programado. */
+  pagosParciales:  number
   pagosAtrasados:  number
   totalAbonado:    number
   saldoPendiente:  number
