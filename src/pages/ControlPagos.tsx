@@ -6,12 +6,24 @@ import { corridaHex, estadoConfig } from '@/utils/estadoPago'
 import { fmt } from '@/utils/format'
 import type { PrestamoResumen, EstadoPago } from '@/types'
 
-type Filtro = 'TODOS' | 'ATRASADO' | 'PROXIMO' | 'PAGADO_SIN_CORTE'
+type Filtro = 'TODOS' | 'ATRASADO' | 'ABONO_PARCIAL' | 'PROXIMO' | 'PAGADO_SIN_CORTE'
 
 // Un pago con abono parcial sigue debiendo, así que cuenta como atrasado
 // para efectos de este listado.
 const porCobrar = (p: PrestamoResumen) =>
   (p.pagosAtrasados ?? 0) + (p.pagosParciales ?? 0)
+
+// Un solo lugar para el predicado de cada filtro: lo usan tanto el listado
+// como el contador del chip, que antes lo repetían.
+const FILTROS: { key: Filtro; label: string; match: (p: PrestamoResumen) => boolean }[] = [
+  { key: 'TODOS',            label: 'Todos',        match: ()  => true },
+  { key: 'ATRASADO',         label: 'Atrasados',    match: (p) => porCobrar(p) > 0 },
+  { key: 'ABONO_PARCIAL',    label: 'Parciales',    match: (p) => (p.pagosParciales ?? 0) > 0 },
+  { key: 'PROXIMO',          label: 'Al corriente', match: (p) => porCobrar(p) === 0 },
+  // Ojo: no es lo mismo que 'Parciales'. Aquí entra el dinero ya cobrado que
+  // todavía no pasa por un corte, venga de un pago completo o de uno a medias.
+  { key: 'PAGADO_SIN_CORTE', label: 'Pendiente de corte', match: (p) => (p.semanalSinCorte ?? 0) > 0 },
+]
 
 export default function ControlPagos() {
   const navigate               = useNavigate()
@@ -25,26 +37,15 @@ export default function ControlPagos() {
     (p.clienteTelefono ?? '').includes(query)
   )
 
+  const activo = FILTROS.find(f => f.key === filtro) ?? FILTROS[0]
+
   const filtered = byQuery
-    .filter((p: PrestamoResumen) => {
-      if (filtro === 'TODOS')             return true
-      if (filtro === 'ATRASADO')          return porCobrar(p) > 0
-      if (filtro === 'PROXIMO')           return porCobrar(p) === 0
-      if (filtro === 'PAGADO_SIN_CORTE')  return (p.semanalSinCorte ?? 0) > 0
-      return true
-    })
+    .filter(activo.match)
     .sort((a: PrestamoResumen, b: PrestamoResumen) => {
       const numA = parseInt(a.numero?.replace(/\D/g, '') ?? '0', 10)
       const numB = parseInt(b.numero?.replace(/\D/g, '') ?? '0', 10)
       return numA - numB
     })
-
-  const FILTROS: { key: Filtro; label: string }[] = [
-    { key: 'TODOS',           label: `Todos (${byQuery.length})` },
-    { key: 'ATRASADO',        label: `Atrasados (${byQuery.filter((p: PrestamoResumen) => porCobrar(p) > 0).length})` },
-    { key: 'PROXIMO',         label: `Al corriente (${byQuery.filter((p: PrestamoResumen) => porCobrar(p) === 0).length})` },
-    { key: 'PAGADO_SIN_CORTE',label: `Con abonos (${byQuery.filter((p: PrestamoResumen) => (p.semanalSinCorte ?? 0) > 0).length})` },
-  ]
 
   return (
     <div className="space-y-4 animate-fade-up">
@@ -86,7 +87,7 @@ export default function ControlPagos() {
                 : 'bg-transparent text-slate-500 border-white/5 hover:border-white/10 hover:text-slate-300'
             }`}
           >
-            {f.label}
+            {f.label} ({byQuery.filter(f.match).length})
           </button>
         ))}
       </div>
