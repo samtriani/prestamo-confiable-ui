@@ -2,11 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Filter, Search } from 'lucide-react'
 import { usePrestamosActivos } from '@/hooks'
-import { estadoConfig } from '@/utils/estadoPago'
+import { corridaHex, estadoConfig } from '@/utils/estadoPago'
 import { fmt } from '@/utils/format'
 import type { PrestamoResumen, EstadoPago } from '@/types'
 
 type Filtro = 'TODOS' | 'ATRASADO' | 'PROXIMO' | 'PAGADO_SIN_CORTE'
+
+// Un pago con abono parcial sigue debiendo, así que cuenta como atrasado
+// para efectos de este listado.
+const porCobrar = (p: PrestamoResumen) =>
+  (p.pagosAtrasados ?? 0) + (p.pagosParciales ?? 0)
 
 export default function ControlPagos() {
   const navigate               = useNavigate()
@@ -23,8 +28,8 @@ export default function ControlPagos() {
   const filtered = byQuery
     .filter((p: PrestamoResumen) => {
       if (filtro === 'TODOS')             return true
-      if (filtro === 'ATRASADO')          return (p.pagosAtrasados ?? 0) > 0
-      if (filtro === 'PROXIMO')           return (p.pagosAtrasados ?? 0) === 0
+      if (filtro === 'ATRASADO')          return porCobrar(p) > 0
+      if (filtro === 'PROXIMO')           return porCobrar(p) === 0
       if (filtro === 'PAGADO_SIN_CORTE')  return (p.semanalSinCorte ?? 0) > 0
       return true
     })
@@ -36,8 +41,8 @@ export default function ControlPagos() {
 
   const FILTROS: { key: Filtro; label: string }[] = [
     { key: 'TODOS',           label: `Todos (${byQuery.length})` },
-    { key: 'ATRASADO',        label: `Atrasados (${byQuery.filter((p: PrestamoResumen) => (p.pagosAtrasados ?? 0) > 0).length})` },
-    { key: 'PROXIMO',         label: `Al corriente (${byQuery.filter((p: PrestamoResumen) => (p.pagosAtrasados ?? 0) === 0).length})` },
+    { key: 'ATRASADO',        label: `Atrasados (${byQuery.filter((p: PrestamoResumen) => porCobrar(p) > 0).length})` },
+    { key: 'PROXIMO',         label: `Al corriente (${byQuery.filter((p: PrestamoResumen) => porCobrar(p) === 0).length})` },
     { key: 'PAGADO_SIN_CORTE',label: `Con abonos (${byQuery.filter((p: PrestamoResumen) => (p.semanalSinCorte ?? 0) > 0).length})` },
   ]
 
@@ -47,7 +52,7 @@ export default function ControlPagos() {
       {/* Leyenda de colores — oculta en mobile */}
       <div className="hidden md:flex items-center gap-6 ec-card px-5 py-3">
         <Filter size={13} className="text-slate-500 shrink-0" />
-        {(['PAGADO', 'ATRASADO', 'PAGADO_SIN_CORTE', 'PROXIMO', 'PENDIENTE'] as EstadoPago[]).map(e => {
+        {(['PAGADO', 'PAGADO_SIN_CORTE', 'ABONO_PARCIAL', 'ATRASADO', 'PROXIMO', 'PENDIENTE'] as EstadoPago[]).map(e => {
           const cfg = estadoConfig[e]
           return (
             <div key={e} className="flex items-center gap-1.5 text-xs text-slate-400">
@@ -98,7 +103,6 @@ export default function ControlPagos() {
           <div className="md:hidden space-y-2">
             {filtered.map((p: PrestamoResumen, i) => {
               const hasAtrasado = (p.pagosAtrasados ?? 0) > 0
-              const sinCorte    = p.pagosSinCorte ?? 0
               return (
                 <div
                   key={p.id}
@@ -120,22 +124,13 @@ export default function ControlPagos() {
 
                   {/* Corrida mini */}
                   <div className="flex gap-0.5 mb-3">
-                    {Array.from({ length: 14 }, (_, idx) => {
-                      const cubiertos = p.pagosCubiertos ?? 0
-                      const atrasados = p.pagosAtrasados ?? 0
-                      let hex = estadoConfig.PENDIENTE.hex
-                      if (idx < cubiertos - sinCorte)          hex = estadoConfig.PAGADO.hex
-                      else if (idx < cubiertos)                hex = estadoConfig.PAGADO_SIN_CORTE.hex
-                      else if (idx < cubiertos + atrasados)    hex = estadoConfig.ATRASADO.hex
-                      else if (idx === cubiertos + atrasados)  hex = estadoConfig.PROXIMO.hex
-                      return (
-                        <span
-                          key={idx}
-                          className="flex-1 h-2.5 rounded-sm"
-                          style={{ backgroundColor: hex }}
-                        />
-                      )
-                    })}
+                    {corridaHex(p).map((hex, idx) => (
+                      <span
+                        key={idx}
+                        className="flex-1 h-2.5 rounded-sm"
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
                   </div>
 
                   {/* Fila inferior: pago semanal + progreso + sin corte */}
@@ -235,24 +230,14 @@ export default function ControlPagos() {
                       </td>
                       <td>
                         <div className="flex gap-1">
-                          {Array.from({ length: 14 }, (_, idx) => {
-                            const cubiertos  = p.pagosCubiertos ?? 0
-                            const atrasados  = p.pagosAtrasados ?? 0
-                            const sinCorte   = p.pagosSinCorte ?? 0
-                            let hex = estadoConfig.PENDIENTE.hex
-                            if (idx < cubiertos - sinCorte)          hex = estadoConfig.PAGADO.hex
-                            else if (idx < cubiertos)                hex = estadoConfig.PAGADO_SIN_CORTE.hex
-                            else if (idx < cubiertos + atrasados)    hex = estadoConfig.ATRASADO.hex
-                            else if (idx === cubiertos + atrasados)  hex = estadoConfig.PROXIMO.hex
-                            return (
-                              <span
-                                key={idx}
-                                className="w-3 h-3 rounded-sm shrink-0"
-                                style={{ backgroundColor: hex }}
-                                title={`Pago ${idx + 1}`}
-                              />
-                            )
-                          })}
+                          {corridaHex(p).map((hex, idx) => (
+                            <span
+                              key={idx}
+                              className="w-3 h-3 rounded-sm shrink-0"
+                              style={{ backgroundColor: hex }}
+                              title={`Pago ${idx + 1}`}
+                            />
+                          ))}
                         </div>
                       </td>
                     </tr>

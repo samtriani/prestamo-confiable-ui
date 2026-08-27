@@ -6,6 +6,7 @@ import {
   useTotalSemanal
 } from '@/hooks'
 import { StatCard, Button, Modal } from '@/components/ui'
+import { corridaHex } from '@/utils/estadoPago'
 import { fmt } from '@/utils/format'
 import { useAuth } from '@/context/AuthContext'
 import type { DashboardData, PrestamoResumen } from '@/types'
@@ -343,24 +344,13 @@ export default function Dashboard() {
                       </td>
                       <td>
                         <div className="flex gap-1">
-                          {Array.from({ length: 14 }, (_, i) => {
-                            const cubiertos  = p.pagosCubiertos ?? 0
-                            const sinCorte   = p.pagosSinCorte  ?? 0
-                            const pagados    = cubiertos - sinCorte
-                            const atrasados  = p.pagosAtrasados ?? 0
-                            let color = '#374151'
-                            if (i < pagados)                    color = '#22c55e'
-                            else if (i < cubiertos)             color = '#f97316'
-                            else if (i < cubiertos + atrasados) color = '#ef4444'
-                            else if (i === cubiertos + atrasados) color = '#3b82f6'
-                            return (
-                              <span
-                                key={i}
-                                className="w-2.5 h-2.5 rounded-sm"
-                                style={{ backgroundColor: color }}
-                              />
-                            )
-                          })}
+                          {corridaHex(p).map((color, i) => (
+                            <span
+                              key={i}
+                              className="w-2.5 h-2.5 rounded-sm"
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
                         </div>
                       </td>
                     </tr>
