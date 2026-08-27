@@ -11,6 +11,11 @@ const ROL_ORDER: Record<Rol, number> = { ADMIN: 0, OPERADOR: 1, CLIENTE: 2 }
 
 type FiltroRol = 'TODOS' | Rol
 
+// Quita acentos y pasa a minusculas para que la busqueda no dependa de
+// como se haya capturado el nombre.
+const normalizar = (t: string) =>
+  t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
 const EMPTY_CREATE = { username: '', password: '', nombre: '', rol: 'OPERADOR' as Rol, clienteId: '' }
 const EMPTY_EDIT   = { nombre: '', rol: 'OPERADOR' as Rol, clienteId: '', password: '' }
 
@@ -63,26 +68,43 @@ export default function Usuarios() {
   }
 
   const [filtro, setFiltro] = useState<FiltroRol>('TODOS')
+  const [query, setQuery]   = useState('')
 
+  // Totales globales para el encabezado: no dependen de la busqueda.
   const admins     = useMemo(() => usuarios.filter((u: Usuario) => u.rol === 'ADMIN'),    [usuarios])
   const operadores = useMemo(() => usuarios.filter((u: Usuario) => u.rol === 'OPERADOR'), [usuarios])
   const clts       = useMemo(() => usuarios.filter((u: Usuario) => u.rol === 'CLIENTE'),  [usuarios])
 
-  // Ordenar: ADMIN → OPERADOR → CLIENTE, luego aplicar filtro
-  const sorted   = useMemo(() =>
+  // Ordenar: ADMIN → OPERADOR → CLIENTE
+  const sorted = useMemo(() =>
     [...usuarios].sort((a: Usuario, b: Usuario) => ROL_ORDER[a.rol] - ROL_ORDER[b.rol]),
     [usuarios]
   )
+
+  // Busca por nombre y por usuario. Sin acentos ni mayusculas, para que
+  // "jose" encuentre a "Jose" y a "José".
+  const byQuery = useMemo(() => {
+    const q = normalizar(query)
+    if (!q) return sorted
+    return sorted.filter((u: Usuario) =>
+      normalizar(u.nombre).includes(q) || normalizar(u.username).includes(q)
+    )
+  }, [sorted, query])
+
+  // El rol se aplica despues del texto, para que los chips puedan contar
+  // sobre el resultado de la busqueda y no sobre la lista completa.
   const filtered = useMemo(() =>
-    filtro === 'TODOS' ? sorted : sorted.filter((u: Usuario) => u.rol === filtro),
-    [sorted, filtro]
+    filtro === 'TODOS' ? byQuery : byQuery.filter((u: Usuario) => u.rol === filtro),
+    [byQuery, filtro]
   )
 
+  const cuenta = (rol: Rol) => byQuery.filter((u: Usuario) => u.rol === rol).length
+
   const FILTROS: { key: FiltroRol; label: string; style: string }[] = [
-    { key: 'TODOS',    label: `Todos (${usuarios.length})`,       style: 'bg-slate-600/20 text-slate-300 border-slate-500/40' },
-    { key: 'ADMIN',    label: `Admins (${admins.length})`,        style: 'bg-green-600/20 text-green-400 border-green-600/40' },
-    { key: 'OPERADOR', label: `Operadores (${operadores.length})`,style: 'bg-blue-600/20 text-blue-400 border-blue-600/40'   },
-    { key: 'CLIENTE',  label: `Clientes (${clts.length})`,        style: 'bg-purple-600/20 text-purple-400 border-purple-600/40' },
+    { key: 'TODOS',    label: `Todos (${byQuery.length})`,            style: 'bg-slate-600/20 text-slate-300 border-slate-500/40' },
+    { key: 'ADMIN',    label: `Admins (${cuenta('ADMIN')})`,          style: 'bg-green-600/20 text-green-400 border-green-600/40' },
+    { key: 'OPERADOR', label: `Operadores (${cuenta('OPERADOR')})`,   style: 'bg-blue-600/20 text-blue-400 border-blue-600/40'   },
+    { key: 'CLIENTE',  label: `Clientes (${cuenta('CLIENTE')})`,      style: 'bg-purple-600/20 text-purple-400 border-purple-600/40' },
   ]
 
   return (
@@ -118,11 +140,34 @@ export default function Usuarios() {
         ))}
       </div>
 
+      {/* Búsqueda */}
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+        <input
+          className="ec-input pl-8 pr-8 w-full"
+          placeholder="Buscar por nombre o usuario..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Limpiar búsqueda"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-slate-500 hover:text-slate-300"
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
+
       {/* Lista */}
       {isLoading ? (
         <div className="ec-card p-10 text-center text-slate-500 text-sm">Cargando…</div>
       ) : filtered.length === 0 ? (
-        <div className="ec-card p-10 text-center text-slate-500 text-sm">No hay usuarios</div>
+        <div className="ec-card p-10 text-center text-slate-500 text-sm">
+          {query ? `No se encontró "${query}"` : 'No hay usuarios'}
+        </div>
       ) : (
         <>
           {/* ── MOBILE: cards ─────────────────────────────────── */}
